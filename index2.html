@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极简·layui表单生成器 (长短布局·代码格式化)</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.8/dist/css/layui.css">
+    <style>
+        /* ---------- 极简淡白主题 ---------- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #f5f7fa;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 24px;
+            min-width: 1200px;
+            color: #1e293b;
+        }
+
+        .minimal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 4px 12px 4px;
+            border-bottom: 1px solid #dde2e8;
+            margin-bottom: 20px;
+        }
+        .minimal-header a {
+            color: #2f5e4a;
+            text-decoration: none;
+        }
+        .minimal-header a:hover {
+            text-decoration: underline;
+        }
+        .minimal-header span {
+            color: #3d4e62;
+            font-size: 16px;
+        }
+
+        .builder-minimal {
+            display: flex;
+            gap: 20px;
+            align-items: stretch;
+        }
+
+        /* 左侧组件库 (只负责点击，长短组按钮样式已由外部div控制) */
+        .left-minimal {
+            width: 190px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .comp-group .group-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #2f5e4a;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            padding-left: 2px;
+        }
+        .comp-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        /* 左侧按钮宽度无需再区分，因为区分已在中间预览区实现，但为了视觉整齐让所有按钮占一半 */
+        .comp-item {
+            width: calc(50% - 4px);
+            background: #f8fafc;
+            border: 1px solid #dde3e9;
+            border-radius: 4px;
+            padding: 8px 0;
+            font-size: 13px;
+            text-align: center;
+            cursor: pointer;
+            color: #1e293b;
+            transition: 0.1s;
+        }
+        .comp-item:hover {
+            background: #ecf3f0;
+            border-color: #2f5e4a;
+        }
+
+        /* 中间预览区 — 使用flex实现长短布局 */
+        .mid-minimal {
+            flex: 1;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        .preview-toolbar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #edf2f7;
+            padding-bottom: 12px;
+        }
+        .preview-toolbar button {
+            background: #ffffff;
+            border: 1px solid #cbd5e0;
+            border-radius: 30px;
+            padding: 6px 16px;
+            font-size: 13px;
+            color: #2d3f55;
+            cursor: pointer;
+        }
+        .preview-toolbar button:hover {
+            background: #f1f6fa;
+            border-color: #8faa9b;
+        }
+        .preview-area {
+            flex: 1;
+            border: 1px dashed #cbd5e0;
+            background: #fcfdfe;
+            border-radius: 5px;
+            padding: 20px 16px;
+            overflow-y: auto;
+            min-height: 420px;
+        }
+        /* 表单flex布局：让所有直接子元素(即.layui-form-item)参与flex */
+        .preview-area form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 2%;  /* 行间距12px，列间距2% */
+        }
+        /* 所有表单项默认宽度100% (长组件) */
+        .preview-area .layui-form-item {
+            width: 100%;
+            margin-bottom: 0;  /* 取消layui默认margin，用gap控制 */
+        }
+        /* 短组件宽度48% (减去2%的列间距，两个短组件并排占 48%+2%+48% = 98%) */
+        .preview-area .layui-form-item.short-field {
+            width: 48%;
+        }
+        /* 保持标签和输入块比例 */
+        .preview-area .layui-form-label {
+            width: 80px;
+            color: #33465c;
+        }
+        .preview-area .layui-input-block {
+            margin-left: 110px;
+        }
+        /* 短组件内若内容过长，稍微调整 */
+        .preview-area .short-field .layui-input-block {
+            margin-left: 90px;  /* 可微调 */
+        }
+
+        /* 右侧放大代码区 */
+        .right-minimal {
+            width: 460px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .code-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .code-box {
+            background: #fafcfd;
+            border: 1px solid #d4dce6;
+            border-radius: 5px;
+            padding: 8px 12px;
+        }
+        .code-label {
+            font-size: 12px;
+            color: #556b82;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .code-label span {
+            color: #2f5e4a;
+            background: #e6f0ec;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+        .code-input {
+            width: 100%;
+            background: #ffffff;
+            border: 1px solid #d0d9e3;
+            border-radius: 4px;
+            color: #1e2b3c;
+            font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            padding: 12px 10px;
+            resize: vertical;
+            outline: none;
+            white-space: pre;
+            overflow: auto;
+        }
+        #htmlInput {
+            min-height: 240px;
+        }
+        #jsInput {
+            min-height: 160px;
+        }
+        .code-input:focus {
+            border-color: #7f9a8d;
+        }
+        .apply-btn {
+            background: transparent;
+            border: 1px solid #a0b8ab;
+            border-radius: 40px;
+            padding: 10px 0;
+            color: #2b5e47;
+            font-size: 14px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .apply-btn:hover {
+            background: #e9f2ed;
+            border-color: #2b6f4c;
+        }
+        .hint-text {
+            color: #7a8c9f;
+            font-size: 12px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="minimal-header">
+        <a href="https://get.qiaobuqiao.com/box/tools/layuibd/" target="_blank">← 返回大神奇宝库</a>
+        <span>layui 表单生成器 · 长短布局 & 格式化</span>
+        <span style="width:20px;"></span>
+    </div>
+
+    <div class="builder-minimal">
+        <!-- 左侧组件库 (长/短分组，点击时根据组别添加不同宽度类) -->
+        <div class="left-minimal">
+            <div class="comp-group" id="longGroup">
+                <div class="group-title">长 · 组件 (宽度100%)</div>
+                <div class="comp-grid">
+                    <div class="comp-item" data-type="input">输入框</div>
+                    <div class="comp-item" data-type="password">密码框</div>
+                    <div class="comp-item" data-type="select">选择框</div>
+                    <div class="comp-item" data-type="checkbox">复选框</div>
+                    <div class="comp-item" data-type="switch">开关</div>
+                    <div class="comp-item" data-type="radio">单选框</div>
+                    <div class="comp-item" data-type="textarea">文本域</div>
+                    <div class="comp-item" data-type="submit">提交+重置</div>
+                </div>
+            </div>
+            <div class="comp-group" id="shortGroup">
+                <div class="group-title">短 · 组件 (宽度50%)</div>
+                <div class="comp-grid">
+                    <div class="comp-item" data-type="input">输入框</div>
+                    <div class="comp-item" data-type="password">密码框</div>
+                    <div class="comp-item" data-type="select">选择框</div>
+                    <div class="comp-item" data-type="checkbox">复选框</div>
+                    <div class="comp-item" data-type="switch">开关</div>
+                    <div class="comp-item" data-type="radio">单选框</div>
+                    <div class="comp-item" data-type="textarea">文本域</div>
+                    <div class="comp-item" data-type="submit">提交+重置</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中间预览区 -->
+        <div class="mid-minimal">
+            <div class="preview-toolbar">
+                <button id="clearPreviewBtn">清空预览</button>
+                <button id="resetPreviewBtn">还原默认</button>
+                <span style="margin-left: auto; color:#6c8198; font-size:13px;">短组件自动并排</span>
+            </div>
+            <div class="preview-area" id="previewContainer"></div>
+        </div>
+
+        <!-- 右侧放大代码区 (可编辑，且HTML自动格式化) -->
+        <div class="right-minimal">
+            <div class="code-section">
+                <div class="code-box">
+                    <div class="code-label">
+                        <span>📄 HTML (已格式化)</span>
+                        <span>可编辑</span>
+                    </div>
+                    <textarea id="htmlInput" class="code-input" wrap="off" placeholder="<form ..."></textarea>
+                </div>
+                <div class="code-box">
+                    <div class="code-label">
+                        <span>⚙️ JavaScript</span>
+                        <span>可编辑</span>
+                    </div>
+                    <textarea id="jsInput" class="code-input" wrap="off" placeholder="layui.use(..."></textarea>
+                </div>
+            </div>
+            <button class="apply-btn" id="applyCodeBtn">应用编辑并刷新预览</button>
+            <div class="hint-text">修改后点击应用 / Ctrl+Enter</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.9.8/dist/layui.js"></script>
+    <script>
+        (function() {
+            // ---------- 默认表单 (所有项默认添加 long-field 类) ----------
+            const DEFAULT_FORM_HTML = `<form class="layui-form" action="" onsubmit="return false">
+    <div class="layui-form-item long-field">
+        <label class="layui-form-label">输入框</label>
+        <div class="layui-input-block">
+            <input type="text" name="hdyb" required lay-verify="required" placeholder="请输入输入框内容" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item long-field">
+        <label class="layui-form-label">密码框</label>
+        <div class="layui-input-block">
+            <input type="password" name="aubol" required lay-verify="required" placeholder="请输入密码框内容" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item long-field">
+        <label class="layui-form-label">选择框</label>
+        <div class="layui-input-block">
+            <select name="city" lay-verify="required">
+                <option value=""></option>
+                <option value="北京">北京</option>
+                <option value="上海">上海</option>
+                <option value="广州">广州</option>
+                <option value="深圳">深圳</option>
+                <option value="杭州">杭州</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item long-field">
+        <label class="layui-form-label">复选框</label>
+        <div class="layui-input-block">
+            <input type="checkbox" name="hobby[]" title="写作"><input type="checkbox" name="hobby[]" title="阅读" checked><input type="checkbox" name="hobby[]" title="发呆">
+        </div>
+    </div>
+    <div class="layui-form-item long-field">
+        <label class="layui-form-label">开关</label>
+        <div class="layui-input-block">
+            <input type="checkbox" name="switch" lay-skin="switch">
+        </div>
+    </div>
+    <div class="layui-form-item long-field">
+        <label class="layui-form-label">单选框</label>
+        <div class="layui-input-block">
+            <input type="radio" name="sex" value="男" title="男" checked><input type="radio" name="sex" value="女" title="女">
+        </div>
+    </div>
+    <div class="layui-form-item layui-form-text long-field">
+        <label class="layui-form-label">文本域</label>
+        <div class="layui-input-block">
+            <textarea name="desc" placeholder="请输入内容" class="layui-textarea"></textarea>
+        </div>
+    </div>
+    <div class="layui-form-item long-field">
+        <div class="layui-input-block">
+            <button class="layui-btn" lay-submit lay-filter="formDemo">立即提交</button>
+            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+    </div>
+</form>`;
+
+            const DEFAULT_JS = `layui.use('form', function() {
+  var form = layui.form;
+  form.on('submit(formDemo)', function(data) {
+    layer.msg(JSON.stringify(data.field));
+    return false;
+  });
+});`;
+
+            // DOM 元素
+            const previewContainer = document.getElementById('previewContainer');
+            const htmlInput = document.getElementById('htmlInput');
+            const jsInput = document.getElementById('jsInput');
+            const applyBtn = document.getElementById('applyCodeBtn');
+            const clearBtn = document.getElementById('clearPreviewBtn');
+            const resetBtn = document.getElementById('resetPreviewBtn');
+
+            // 简单的HTML格式化函数 (增加缩进)
+            function formatHtml(html) {
+                // 去除多余空白，但保留标签结构
+                let formatted = '';
+                let indent = 0;
+                const lines = html.replace(/>\s*</g, '>\n<').split('\n');
+                const indentSize = 2;
+                lines.forEach(line => {
+                    if (line.match(/^<\/\w/)) {
+                        indent -= indentSize;
+                    }
+                    formatted += ' '.repeat(indent) + line + '\n';
+                    if (line.match(/^<\w[^>]*[^/]?>$/) && !line.match(/\/>$/)) {
+                        indent += indentSize;
+                    }
+                });
+                return formatted.trim();
+            }
+
+            // 渲染表单并更新HTML输入框 (自动格式化)
+            function renderForm(htmlContent) {
+                previewContainer.innerHTML = htmlContent;
+                if (typeof layui !== 'undefined' && layui.form) {
+                    layui.use('form', function() {
+                        try { layui.form.render(); } catch (e) {}
+                    });
+                }
+                // 更新htmlInput为格式化后的内容
+                htmlInput.value = formatHtml(htmlContent);
+            }
+
+            // 初始化
+            function initDisplay() {
+                renderForm(DEFAULT_FORM_HTML);
+                jsInput.value = DEFAULT_JS;
+                // 执行默认js
+                try { eval(DEFAULT_JS); } catch (e) {}
+            }
+
+            // 应用右侧代码
+            function applyCode() {
+                const newHtml = htmlInput.value;
+                const newJs = jsInput.value;
+                previewContainer.innerHTML = newHtml;
+                try {
+                    const runJs = new Function(newJs);
+                    runJs();
+                } catch (e) {
+                    console.warn('执行JS出错', e);
+                }
+                layui.use('form', function() { layui.form.render(); });
+                // 重新格式化显示（如果用户输入非格式化，我们保留原样，但为了统一可再次格式化）
+                htmlInput.value = formatHtml(newHtml);
+            }
+
+            // 清空预览 (只清空表单，保留JS)
+            function clearPreview() {
+                const emptyForm = `<form class="layui-form" action="" onsubmit="return false"></form>`;
+                renderForm(emptyForm);
+                // jsInput保持不变
+            }
+
+            // 还原默认 (重置JS)
+            function resetPreview() {
+                renderForm(DEFAULT_FORM_HTML);
+                jsInput.value = DEFAULT_JS;
+                try { eval(DEFAULT_JS); } catch (e) {}
+            }
+
+            // ---------- 左侧组件点击：根据所在组添加长短类 ----------
+            const longGroup = document.getElementById('longGroup');
+            const shortGroup = document.getElementById('shortGroup');
+
+            function createSnippet(type, isLong) {
+                const fieldClass = isLong ? 'long-field' : 'short-field';
+                switch (type) {
+                    case 'input':
+                        return `<div class="layui-form-item ${fieldClass}">
+        <label class="layui-form-label">新输入框</label>
+        <div class="layui-input-block">
+            <input type="text" name="newInput" placeholder="新输入框" class="layui-input">
+        </div>
+    </div>`;
+                    case 'password':
+                        return `<div class="layui-form-item ${fieldClass}">
+        <label class="layui-form-label">新密码框</label>
+        <div class="layui-input-block">
+            <input type="password" name="newPwd" placeholder="新密码" class="layui-input">
+        </div>
+    </div>`;
+                    case 'select':
+                        return `<div class="layui-form-item ${fieldClass}">
+        <label class="layui-form-label">新选择框</label>
+        <div class="layui-input-block">
+            <select name="newSelect"><option value="选项1">选项1</option><option value="选项2">选项2</option></select>
+        </div>
+    </div>`;
+                    case 'checkbox':
+                        return `<div class="layui-form-item ${fieldClass}">
+        <label class="layui-form-label">新复选框</label>
+        <div class="layui-input-block">
+            <input type="checkbox" name="newCheck[]" title="选项X"><input type="checkbox" name="newCheck[]" title="选项Y">
+        </div>
+    </div>`;
+                    case 'switch':
+                        return `<div class="layui-form-item ${fieldClass}">
+        <label class="layui-form-label">新开关</label>
+        <div class="layui-input-block">
+            <input type="checkbox" name="newSwitch" lay-skin="switch">
+        </div>
+    </div>`;
+                    case 'radio':
+                        return `<div class="layui-form-item ${fieldClass}">
+        <label class="layui-form-label">新单选框</label>
+        <div class="layui-input-block">
+            <input type="radio" name="newRadio" value="A" title="A"><input type="radio" name="newRadio" value="B" title="B">
+        </div>
+    </div>`;
+                    case 'textarea':
+                        return `<div class="layui-form-item layui-form-text ${fieldClass}">
+        <label class="layui-form-label">新文本域</label>
+        <div class="layui-input-block">
+            <textarea name="newText" placeholder="新文本域" class="layui-textarea"></textarea>
+        </div>
+    </div>`;
+                    case 'submit':
+                        return `<div class="layui-form-item ${fieldClass}">
+        <div class="layui-input-block">
+            <button class="layui-btn" lay-submit lay-filter="formDemo">新提交</button>
+            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+    </div>`;
+                    default: return '';
+                }
+            }
+
+            // 为所有按钮添加点击事件（根据父级组判断长短）
+            const allItems = document.querySelectorAll('.comp-item');
+            allItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    const type = this.dataset.type;
+                    // 判断所在组：如果按钮在longGroup内则是长组件，否则短组件
+                    const isLong = this.closest('#longGroup') !== null;
+                    const snippet = createSnippet(type, isLong);
+                    if (!snippet) return;
+
+                    const form = previewContainer.querySelector('form');
+                    if (form) {
+                        form.insertAdjacentHTML('beforeend', snippet);
+                    } else {
+                        previewContainer.innerHTML = `<form class="layui-form">${snippet}</form>`;
+                    }
+
+                    // 重新渲染
+                    layui.use('form', function() { layui.form.render(); });
+
+                    // 更新htmlInput (获取最新form并格式化)
+                    const updatedForm = previewContainer.querySelector('form')?.outerHTML || previewContainer.innerHTML;
+                    htmlInput.value = formatHtml(updatedForm);
+                });
+            });
+
+            // 绑定按钮
+            applyBtn.addEventListener('click', applyCode);
+            clearBtn.addEventListener('click', clearPreview);
+            resetBtn.addEventListener('click', resetPreview);
+            htmlInput.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key === 'Enter') applyCode(); });
+            jsInput.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key === 'Enter') applyCode(); });
+
+            // 启动
+            initDisplay();
+        })();
+    </script>
+</body>
+</html>
