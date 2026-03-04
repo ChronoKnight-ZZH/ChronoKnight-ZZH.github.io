@@ -1,0 +1,1991 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarkFlow · Markdown 阅读器</title>
+  <!-- Marked.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <!-- highlight.js -->
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css" id="hljs-theme">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+  <!-- Mermaid -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    :root {
+      --bg: #0f0e17;
+      --bg2: #1a1928;
+      --bg3: #242338;
+      --surface: #1e1d2e;
+      --border: #2e2c45;
+      --accent: #e8c547;
+      --accent2: #ff6b6b;
+      --accent3: #64d9b8;
+      --text: #fffffe;
+      --text2: #a7a5c0;
+      --text3: #6b697f;
+      --sidebar-w: 280px;
+      --header-h: 54px;
+      --radius: 10px;
+      --font-body: 'Source Serif 4', Georgia, serif;
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --prose-width: 760px;
+    }
+
+    [data-theme="light"] {
+      --bg: #faf9f5;
+      --bg2: #f0ede4;
+      --bg3: #e8e4d9;
+      --surface: #ffffff;
+      --border: #d8d4c8;
+      --accent: #c9952a;
+      --accent2: #d94f4f;
+      --accent3: #2a8a72;
+      --text: #1a1814;
+      --text2: #5a5648;
+      --text3: #8a8070;
+    }
+
+    [data-theme="sepia"] {
+      --bg: #f4ede0;
+      --bg2: #ece3d0;
+      --bg3: #e0d5bf;
+      --surface: #faf5eb;
+      --border: #d4c9b0;
+      --accent: #9b6a2f;
+      --accent2: #b55a3a;
+      --accent3: #3a7a5a;
+      --text: #2a2018;
+      --text2: #6a5840;
+      --text3: #9a8870;
+    }
+
+    [data-theme="forest"] {
+      --bg: #0d1a0f;
+      --bg2: #152018;
+      --bg3: #1e2d21;
+      --surface: #192219;
+      --border: #2a3d2c;
+      --accent: #7ec850;
+      --accent2: #f0a040;
+      --accent3: #50c8c0;
+      --text: #e8f5e0;
+      --text2: #9ab890;
+      --text3: #608060;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* ── Layout ── */
+    .app {
+      display: grid;
+      grid-template-rows: var(--header-h) 1fr;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .app.no-sidebar {
+      grid-template-columns: 0 1fr;
+    }
+
+    /* ── Header ── */
+    header {
+      grid-column: 1 / -1;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+      z-index: 10;
+      backdrop-filter: blur(10px);
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    .logo span {
+      color: var(--text2);
+      font-weight: 300;
+      font-style: italic;
+    }
+
+    .header-sep {
+      flex: 1;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.18s;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: var(--bg3);
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    .btn.active {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+    }
+
+    .btn svg {
+      width: 13px;
+      height: 13px;
+      flex-shrink: 0;
+    }
+
+    .btn-icon {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      justify-content: center;
+      border-radius: 6px;
+    }
+
+    /* Theme selector */
+    .theme-select {
+      appearance: none;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .theme-select:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    /* Font size */
+    .font-size-group {
+      display: flex;
+      gap: 2px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .no-sidebar .sidebar {
+      display: none;
+    }
+
+    .sidebar-header {
+      padding: 14px 16px 10px;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text3);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toc-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .toc-item {
+      display: block;
+      padding: 5px 16px;
+      font-size: 0.82rem;
+      color: var(--text2);
+      text-decoration: none;
+      font-family: var(--font-body);
+      line-height: 1.4;
+      border-left: 2px solid transparent;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+
+    .toc-item:hover {
+      color: var(--text);
+      background: var(--bg3);
+    }
+
+    .toc-item.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+    }
+
+    .toc-h2 {
+      padding-left: 26px;
+      font-size: 0.79rem;
+    }
+
+    .toc-h3 {
+      padding-left: 38px;
+      font-size: 0.75rem;
+      opacity: 0.85;
+    }
+
+    .toc-h4 {
+      padding-left: 50px;
+      font-size: 0.72rem;
+      opacity: 0.75;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 0.67rem;
+      color: var(--text3);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    /* ── Main content ── */
+    .main-area {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Drop zone overlay */
+    .drop-overlay {
+      position: absolute;
+      inset: 0;
+      background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+      border: 3px dashed var(--accent);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: var(--accent);
+      pointer-events: none;
+    }
+
+    .drop-overlay.active {
+      display: flex;
+    }
+
+    /* Tab bar */
+    .tab-bar {
+      display: flex;
+      align-items: center;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 12px;
+      gap: 4px;
+      min-height: 40px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .tab-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px 6px 0 0;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text3);
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-bottom: none;
+      margin-bottom: -1px;
+      white-space: nowrap;
+      transition: all 0.15s;
+      max-width: 160px;
+    }
+
+    .tab:hover {
+      color: var(--text2);
+      background: var(--bg3);
+    }
+
+    .tab.active {
+      color: var(--text);
+      background: var(--bg);
+      border-color: var(--border);
+      border-bottom-color: var(--bg);
+    }
+
+    .tab .tab-close {
+      width: 14px;
+      height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 3px;
+      opacity: 0.5;
+    }
+
+    .tab .tab-close:hover {
+      opacity: 1;
+      background: var(--accent2);
+      color: #fff;
+    }
+
+    .tab-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 未保存标记样式 */
+    .unsaved-mark {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background-color: #ff6b6b;
+      border-radius: 50%;
+      margin-left: 4px;
+      flex-shrink: 0;
+    }
+
+    .tab-bar-end {
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    /* Content split: editor + preview */
+    .content-area {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .editor-pane {
+      display: none;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .editor-pane.show {
+      display: flex;
+    }
+
+    .editor-header {
+      padding: 6px 12px;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text3);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+    }
+
+    .editor-textarea {
+      flex: 1;
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      line-height: 1.7;
+      border: none;
+      outline: none;
+      resize: none;
+      padding: 20px;
+      tab-size: 2;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .preview-pane {
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Split ratio */
+    .content-area.split .editor-pane {
+      flex: 1;
+      display: flex;
+    }
+
+    .content-area.split .preview-pane {
+      flex: 1;
+    }
+
+    .content-area.editor-only .editor-pane {
+      flex: 1;
+      display: flex;
+    }
+
+    .content-area.editor-only .preview-pane {
+      display: none;
+    }
+
+    /* ── Prose rendering ── */
+    .prose-container {
+      max-width: var(--prose-width);
+      margin: 0 auto;
+      padding: 48px 32px 80px;
+      width: 100%;
+      flex: 1;
+    }
+
+    .prose-container.wide {
+      --prose-width: 100%;
+      padding: 32px 40px;
+    }
+
+    /* Progress indicator */
+    .read-progress {
+      position: sticky;
+      top: 0;
+      height: 2px;
+      background: var(--border);
+      z-index: 5;
+    }
+
+    .read-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      width: 0%;
+      transition: width 0.1s;
+    }
+
+    /* Prose styles */
+    .prose {
+      font-size: 1rem;
+      line-height: 1.85;
+      color: var(--text);
+    }
+
+    .prose.sm {
+      font-size: 0.9rem;
+    }
+
+    .prose.lg {
+      font-size: 1.1rem;
+    }
+
+    .prose.xl {
+      font-size: 1.2rem;
+    }
+
+    .prose h1,
+    .prose h2,
+    .prose h3,
+    .prose h4,
+    .prose h5,
+    .prose h6 {
+      font-family: var(--font-display);
+      color: var(--text);
+      line-height: 1.25;
+      margin-top: 2.2em;
+      margin-bottom: 0.7em;
+    }
+
+    .prose h1 {
+      font-size: 2.4em;
+      letter-spacing: -0.02em;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.25em;
+      margin-top: 0;
+    }
+
+    .prose h2 {
+      font-size: 1.7em;
+      letter-spacing: -0.01em;
+    }
+
+    .prose h2::before {
+      content: '§';
+      color: var(--accent);
+      margin-right: 0.5em;
+      font-style: italic;
+      opacity: 0.6;
+      font-size: 0.8em;
+    }
+
+    .prose h3 {
+      font-size: 1.3em;
+      font-style: italic;
+    }
+
+    .prose h4 {
+      font-size: 1.1em;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-size: 0.9em;
+      color: var(--accent);
+    }
+
+    .prose h5,
+    .prose h6 {
+      font-size: 1em;
+    }
+
+    .prose p {
+      margin-bottom: 1.4em;
+    }
+
+    .prose p:last-child {
+      margin-bottom: 0;
+    }
+
+    .prose a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
+      text-underline-offset: 3px;
+      transition: all 0.15s;
+    }
+
+    .prose a:hover {
+      text-decoration-color: var(--accent);
+    }
+
+    .prose strong {
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .prose em {
+      font-style: italic;
+      color: var(--text);
+    }
+
+    .prose del {
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+
+    .prose code {
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      background: var(--bg3);
+      color: var(--accent3);
+      padding: 0.15em 0.45em;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .prose pre {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin: 1.5em 0;
+      overflow-x: auto;
+      position: relative;
+    }
+
+    .prose pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: inherit;
+      font-size: 0.87em;
+      display: block;
+      padding: 18px 20px;
+      line-height: 1.65;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text3);
+    }
+
+    .code-lang-badge {
+      background: var(--accent);
+      color: var(--bg);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .copy-btn {
+      cursor: pointer;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text3);
+      font-family: var(--font-mono);
+      font-size: 0.67rem;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .copy-btn.copied {
+      color: var(--accent3);
+      border-color: var(--accent3);
+    }
+
+    .prose blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 2px 0 2px 20px;
+      margin: 1.5em 0;
+      color: var(--text2);
+      font-style: italic;
+      position: relative;
+    }
+
+    .prose blockquote::before {
+      content: '"';
+      font-family: var(--font-display);
+      font-size: 3em;
+      color: var(--accent);
+      opacity: 0.2;
+      position: absolute;
+      top: -10px;
+      left: 10px;
+      line-height: 1;
+    }
+
+    .prose blockquote p {
+      margin: 0;
+    }
+
+    .prose ul,
+    .prose ol {
+      padding-left: 1.6em;
+      margin-bottom: 1.4em;
+    }
+
+    .prose li {
+      margin-bottom: 0.4em;
+    }
+
+    .prose li>ul,
+    .prose li>ol {
+      margin-top: 0.4em;
+      margin-bottom: 0;
+    }
+
+    /* Task list */
+    .prose input[type="checkbox"] {
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border: 2px solid var(--border);
+      border-radius: 3px;
+      margin-right: 7px;
+      vertical-align: middle;
+      cursor: default;
+      position: relative;
+      top: -1px;
+      flex-shrink: 0;
+    }
+
+    .prose input[type="checkbox"]:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .prose input[type="checkbox"]:checked::after {
+      content: '✓';
+      font-size: 10px;
+      color: var(--bg);
+      position: absolute;
+      top: -1px;
+      left: 1px;
+    }
+
+    .prose table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5em 0;
+      font-size: 0.9em;
+      overflow-x: auto;
+      display: block;
+    }
+
+    .prose th {
+      background: var(--bg2);
+      font-family: var(--font-mono);
+      font-size: 0.78em;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text2);
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .prose td {
+      padding: 9px 14px;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .prose tr:nth-child(even) td {
+      background: color-mix(in srgb, var(--bg2) 40%, transparent);
+    }
+
+    .prose tr:hover td {
+      background: color-mix(in srgb, var(--accent) 5%, transparent);
+    }
+
+    .prose hr {
+      border: none;
+      border-top: 2px solid var(--border);
+      margin: 3em 0;
+      position: relative;
+    }
+
+    .prose hr::after {
+      content: '◈';
+      position: absolute;
+      top: -0.7em;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg);
+      padding: 0 10px;
+      color: var(--accent);
+      font-size: 0.8em;
+    }
+
+    .prose img {
+      max-width: 100%;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      margin: 1em 0;
+    }
+
+    /* Footnotes */
+    .prose .footnotes {
+      border-top: 1px solid var(--border);
+      margin-top: 3em;
+      padding-top: 1em;
+      font-size: 0.85em;
+      color: var(--text2);
+    }
+
+    /* KaTeX 块级公式额外样式：确保上下间距 */
+    .prose .math-block {
+      margin: 1.5em 0;
+      overflow-x: auto;
+    }
+
+    .prose .katex-display {
+      margin: 0;
+    }
+
+    /* Mermaid */
+    .prose .mermaid {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      margin: 1.5em 0;
+      overflow-x: auto;
+    }
+
+    .prose .mermaid svg {
+      max-width: 100%;
+    }
+
+    /* Definition list */
+    .prose dl {
+      margin: 1.5em 0;
+    }
+
+    .prose dt {
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      color: var(--accent);
+      margin-top: 1em;
+    }
+
+    .prose dd {
+      margin-left: 1.5em;
+      color: var(--text2);
+    }
+
+    /* Highlight mark */
+    .prose mark {
+      background: color-mix(in srgb, var(--accent) 30%, transparent);
+      color: var(--text);
+      padding: 0.05em 0.2em;
+      border-radius: 2px;
+    }
+
+    /* Emoji sizing */
+    .prose img.emoji {
+      width: 1.2em;
+      height: 1.2em;
+      border: none;
+      vertical-align: middle;
+      margin: 0 0.05em;
+    }
+
+    /* Welcome screen */
+    .welcome {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      text-align: center;
+      gap: 12px;
+      color: var(--text3);
+    }
+
+    .welcome-icon {
+      font-size: 3rem;
+      margin-bottom: 8px;
+      filter: grayscale(0.3);
+    }
+
+    .welcome h2 {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      color: var(--text2);
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    .welcome p {
+      font-size: 0.88rem;
+      max-width: 400px;
+      line-height: 1.7;
+    }
+
+    .welcome-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .welcome-btn {
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      color: var(--text2);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+
+    .welcome-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, var(--bg2));
+    }
+
+    .welcome-btn.primary {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+    }
+
+    .welcome-btn.primary:hover {
+      opacity: 0.9;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text3);
+    }
+
+    /* Search overlay */
+    .search-overlay {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 50;
+      box-shadow: 0 8px 24px color-mix(in srgb, #000 40%, transparent);
+    }
+
+    .search-overlay.show {
+      display: flex;
+    }
+
+    .search-input {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      padding: 5px 10px;
+      outline: none;
+      width: 200px;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+    }
+
+    .search-count {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text3);
+      white-space: nowrap;
+    }
+
+    /* Print */
+    @media print {
+
+      .sidebar,
+      header,
+      .tab-bar,
+      .read-progress,
+      .search-overlay {
+        display: none !important;
+      }
+
+      .app {
+        display: block;
+      }
+
+      .prose-container {
+        max-width: 100%;
+        padding: 0;
+      }
+
+      .prose {
+        color: #000;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .app {
+        grid-template-columns: 0 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .hide-mobile {
+        display: none;
+      }
+    }
+
+    /* Animation */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .prose {
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* 脚注样式 */
+    .prose .footnote-ref {
+      font-size: 0.75em;
+      vertical-align: super;
+      line-height: 0;
+      margin: 0 0.1em;
+    }
+
+    .prose .footnote-ref a {
+      color: var(--accent);
+      text-decoration: none;
+      padding: 0 0.2em;
+      font-weight: normal;
+    }
+
+    .prose .footnote-ref a:hover {
+      text-decoration: underline;
+    }
+
+    .prose .footnotes {
+      margin-top: 3em;
+      padding-top: 1em;
+      border-top: 1px solid var(--border);
+      font-size: 0.85em;
+      color: var(--text2);
+    }
+
+    .prose .footnotes h4 {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1em;
+      color: var(--text3);
+    }
+
+    .prose .footnote-def {
+      display: flex;
+      gap: 0.5em;
+      margin: 0.5em 0;
+      padding: 0.2em 0;
+      border-bottom: 1px dashed var(--border);
+      align-items: baseline;
+    }
+
+    .prose .footnote-def:last-child {
+      border-bottom: none;
+    }
+
+    .prose .footnote-def .footnote-ref {
+      font-size: 0.75em;
+      color: var(--accent);
+      min-width: 1.5em;
+      text-align: right;
+    }
+
+    .prose .footnote-def .footnote-backref {
+      margin-left: 0.5em;
+      text-decoration: none;
+      color: var(--text3);
+      font-size: 0.8em;
+    }
+
+    .prose .footnote-def .footnote-backref:hover {
+      color: var(--accent);
+    }
+
+    /* 平滑滚动到脚注 */
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 70px;
+    }
+
+    /* 未保存标记全局样式（已在上方定义） */
+  </style>
+</head>
+
+<body>
+  <div class="app" id="app">
+    <!-- Header -->
+    <header>
+      <div class="logo">Mark<span>Flow</span></div>
+      <div class="header-actions hide-mobile" style="gap:4px">
+        <button class="btn btn-icon" id="toggleSidebar" title="切换侧边栏">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <line x1="9" y1="3" x2="9" y2="21" />
+          </svg>
+        </button>
+      </div>
+      <div class="header-sep"></div>
+      <div class="header-actions">
+        <!-- View mode (中文) -->
+        <div class="font-size-group hide-mobile">
+          <button class="btn btn-icon" id="modePreview" title="仅预览">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+          <button class="btn btn-icon" id="modeSplit" title="分屏视图">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="12" y1="3" x2="12" y2="21" />
+            </svg>
+          </button>
+          <button class="btn btn-icon" id="modeEditor" title="仅编辑器">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+        </div>
+        <!-- Font size (中文) -->
+        <div class="font-size-group hide-mobile">
+          <button class="btn" id="fontSmall" data-size="sm" title="小号字体">A</button>
+          <button class="btn active" id="fontMed" data-size="" title="中号字体" style="font-size:0.85rem">A</button>
+          <button class="btn" id="fontLarge" data-size="lg" title="大号字体" style="font-size:1rem">A</button>
+        </div>
+        <!-- Wide mode -->
+        <button class="btn btn-icon hide-mobile" id="toggleWide" title="宽屏模式">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 3 21 3 21 9" />
+            <polyline points="9 21 3 21 3 15" />
+            <line x1="21" y1="3" x2="14" y2="10" />
+            <line x1="3" y1="21" x2="10" y2="14" />
+          </svg>
+        </button>
+        <!-- Search (中文) -->
+        <button class="btn btn-icon" id="searchBtn" title="搜索 (Ctrl+F)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </button>
+        <!-- Theme (中文) -->
+        <select class="theme-select hide-mobile" id="themeSelect">
+          <option value="">暗色</option>
+          <option value="light">亮色</option>
+          <option value="sepia">怀旧</option>
+          <option value="forest">森林</option>
+        </select>
+        <!-- Open file (中文) -->
+        <label class="btn" title="打开文件" style="cursor:pointer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+          打开
+          <input type="file" id="fileInput" accept=".md,.markdown,.txt" multiple style="display:none">
+        </label>
+        <!-- 保存本地按钮 (中文) -->
+        <button class="btn" id="saveBtn" title="保存当前文件">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+            <polyline points="7 3 7 8 15 8" />
+          </svg>
+          保存
+        </button>
+        <!-- Print (中文) -->
+        <button class="btn btn-icon hide-mobile" id="printBtn" title="打印 / 导出PDF">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9" />
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+            <rect x="6" y="14" width="12" height="8" />
+          </svg>
+        </button>
+      </div>
+    </header>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span>目录</span>
+      </div>
+      <nav class="toc-list" id="tocList">
+        <div style="padding:20px 16px; font-size:0.8rem; color:var(--text3); font-style:italic;">打开 Markdown 文件查看目录
+        </div>
+      </nav>
+      <div class="stats-bar" id="statsBar" style="display:none">
+        <span id="statWords">0 单词</span>
+        <span id="statChars">0 字符</span>
+        <span id="statRead">~0 分钟阅读</span>
+      </div>
+    </aside>
+    <!-- Main -->
+    <main class="main-area" id="mainArea">
+      <div class="drop-overlay" id="dropOverlay">📄 拖放 Markdown 文件到这里</div>
+      <!-- Search overlay (中文) -->
+      <div class="search-overlay" id="searchOverlay">
+        <input type="text" class="search-input" id="searchInput" placeholder="搜索…">
+        <span class="search-count" id="searchCount"></span>
+        <button class="copy-btn" id="searchPrev" title="上一个">↑</button>
+        <button class="copy-btn" id="searchNext" title="下一个">↓</button>
+        <button class="copy-btn" id="searchClose" title="关闭">✕</button>
+      </div>
+      <!-- Tab bar (中文) -->
+      <div class="tab-bar" id="tabBar">
+        <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text3);padding:0 4px;">无打开文件</div>
+        <div class="tab-bar-end">
+          <button class="btn" id="newTabBtn" style="font-size:0.7rem" title="新建标签">+ 新建</button>
+        </div>
+      </div>
+      <!-- Content -->
+      <div class="content-area" id="contentArea">
+        <div class="editor-pane" id="editorPane">
+          <div class="editor-header">Markdown 源码</div>
+          <textarea class="editor-textarea" id="editorTextarea" spellcheck="false"
+            placeholder="在此输入或粘贴 Markdown…"></textarea>
+        </div>
+        <div class="preview-pane" id="previewPane">
+          <div class="read-progress">
+            <div class="read-progress-bar" id="progressBar"></div>
+          </div>
+          <div class="prose-container" id="proseContainer">
+            <!-- Welcome screen (中文) -->
+            <div class="welcome" id="welcomeScreen">
+              <div class="welcome-icon">📖</div>
+              <h2>优雅的 Markdown 阅读体验</h2>
+              <p>打开任意 Markdown 文件，拖拽或直接在编辑器中开始输入。支持 LaTeX 数学公式、代码高亮、Mermaid 图表、表格、任务列表等。</p>
+              <div class="welcome-actions">
+                <button class="welcome-btn primary" id="loadDemo">加载示例</button>
+                <label class="welcome-btn" style="cursor:pointer">打开文件<input type="file" accept=".md,.markdown,.txt"
+                    multiple style="display:none" onchange="handleFiles(this.files)"></label>
+              </div>
+            </div>
+            <article class="prose" id="proseContent" style="display:none"></article>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script>
+    // ─────────────────────────────────────────────
+    // 状态
+    // ─────────────────────────────────────────────
+    let tabs = [];
+    let activeTabId = null;
+    let viewMode = 'preview'; // preview | split | editor-only
+    let wideMode = false;
+    let fontSize = '';
+    let searchMatches = [];
+    let searchIndex = 0;
+    // ─────────────────────────────────────────────
+    // Marked 配置
+    // ─────────────────────────────────────────────
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+      pedantic: false,
+    });
+
+    // 自定义渲染器
+    const renderer = new marked.Renderer();
+
+    // 代码块: 语言徽章 + 复制按钮
+    renderer.code = function (code, lang) {
+      const language = lang || 'text';
+      const validLang = hljs.getLanguage(language) ? language : 'plaintext';
+      let highlighted;
+      try {
+        highlighted = language === 'mermaid'
+          ? `<div class="mermaid">${code}</div>`
+          : hljs.highlight(code, { language: validLang }).value;
+      } catch (e) {
+        highlighted = code;
+      }
+      if (language === 'mermaid') return highlighted;
+      const id = 'cb-' + Math.random().toString(36).slice(2, 8);
+      return `<pre>
+      <div class="code-header">
+        <span class="code-lang-badge">${language.toUpperCase()}</span>
+        <button class="copy-btn" onclick="copyCode(this,'${id}')">复制</button>
+      </div>
+      <code class="hljs language-${validLang}" id="${id}">${highlighted}</code>
+    </pre>`;
+    };
+    // 任务列表 - 修复重复input问题：清理文本中可能残留的input标签
+    renderer.listitem = function (text, task, checked) {
+      if (task) {
+        // 移除text中可能被marked重复插入的input标签（保险措施）
+        const cleanText = text.replace(/<input[^>]*>/g, '');
+        return `<li style="list-style:none;margin-left:-1em"><label><input type="checkbox" ${checked ? 'checked' : ''} disabled> ${cleanText}</label></li>`;
+      }
+      return `<li>${text}</li>`;
+    };
+    // 标题添加锚点
+    renderer.heading = function (text, level) {
+      const slug = text.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '');
+      return `<h${level} id="${slug}">${text}</h${level}>`;
+    };
+    // 文本渲染器（处理脚注引用）
+    renderer.text = function(text) {
+      text = text.replace(/\[\^(\d+)\]/g, function(match, label) {
+        return `<sup class="footnote-ref"><a href="#fn-${label}" id="ref-${label}">[${label}]</a></sup>`;
+      });
+      return text;
+    };
+    // 段落渲染器（同样处理脚注）
+    renderer.paragraph = function(text) {
+      text = text.replace(/\[\^(\d+)\]/g, function(match, label) {
+        return `<sup class="footnote-ref"><a href="#fn-${label}" id="ref-${label}">[${label}]</a></sup>`;
+      });
+      return `<p>${text}</p>`;
+    };
+    marked.use({ renderer });
+
+    // ─────────────────────────────────────────────
+    // 渲染（修复块级公式换行问题和脚注支持）
+    // ─────────────────────────────────────────────
+    function renderMarkdown(md) {
+      // 提取脚注定义 [^1]: 内容
+      const footnotes = [];
+      const footnoteRegex = /\[\^(\d+)\]:\s*([\s\S]*?)(?=\n\[\^\d+\]:|\n\n|$)/g;
+      let footnoteMatch;
+      while ((footnoteMatch = footnoteRegex.exec(md)) !== null) {
+        footnotes.push({
+          label: footnoteMatch[1],
+          content: footnoteMatch[2].trim()
+        });
+      }
+      
+      // 移除脚注定义，避免被渲染为普通文本
+      let contentMd = md.replace(footnoteRegex, '');
+      
+      // 解析 Markdown
+      let html = marked.parse(contentMd);
+      
+      // 修复块级公式：移除公式内部的<br>标签，并确保公式独立成块
+      html = html.replace(/<p>\$\$([\s\S]*?)\$\$<\/p>/g, function(match, formula) {
+        const cleanFormula = formula.replace(/<br\s*\/?>/g, '');
+        return `<div class="math-block">$$${cleanFormula}$$</div>`;
+      });
+      
+      // 处理可能没有被<p>包裹但包含<br>的$$...$$
+      html = html.replace(/\$\$([\s\S]*?)\$\$/g, function(match, formula) {
+        if (!match.includes('<pre') && !match.includes('<code') && !match.includes('class="mermaid"')) {
+          const cleanFormula = formula.replace(/<br\s*\/?>/g, '');
+          return `<div class="math-block">$$${cleanFormula}$$</div>`;
+        }
+        return match;
+      });
+      
+      // 添加脚注定义部分
+      if (footnotes.length > 0) {
+        let footnotesHtml = '<div class="footnotes"><hr><h4>脚注</h4>';
+        footnotes.forEach(fn => {
+          footnotesHtml += `
+            <div class="footnote-def" id="fn-${fn.label}">
+              <sup class="footnote-ref">${fn.label}</sup>
+              <span>${marked.parseInline(fn.content)}</span>
+              <a href="#ref-${fn.label}" class="footnote-backref" title="返回原文">↩</a>
+            </div>`;
+        });
+        footnotesHtml += '</div>';
+        html += footnotesHtml;
+      }
+      
+      return html;
+    }
+
+    function postProcess(container) {
+      // KaTeX
+      if (window.renderMathInElement) {
+        renderMathInElement(container, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true },
+          ],
+          throwOnError: false,
+        });
+      }
+      // Mermaid（此处不运行，因为主题切换时会统一运行）
+      // 在需要时单独调用 runMermaid()
+    }
+
+    function runMermaid() {
+      if (window.mermaid) {
+        mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
+      }
+    }
+
+    function updatePreview(md) {
+      const prose = document.getElementById('proseContent');
+      const welcome = document.getElementById('welcomeScreen');
+      if (!md && md !== '') {
+        welcome.style.display = 'flex';
+        prose.style.display = 'none';
+        return;
+      }
+      welcome.style.display = 'none';
+      prose.style.display = 'block';
+      prose.innerHTML = renderMarkdown(md);
+      postProcess(prose);
+      runMermaid(); // 渲染 Mermaid
+      buildTOC(md);
+      updateStats(md);
+    }
+    // ─────────────────────────────────────────────
+    // 目录
+    // ─────────────────────────────────────────────
+    function buildTOC(md) {
+      const headingRe = /^(#{1,4})\s+(.+)$/gm;
+      const items = [];
+      let m;
+      while ((m = headingRe.exec(md)) !== null) {
+        items.push({ level: m[1].length, text: m[2].trim() });
+      }
+      const tocList = document.getElementById('tocList');
+      if (!items.length) {
+        tocList.innerHTML = '<div style="padding:16px;font-size:0.8rem;color:var(--text3);font-style:italic;">未找到标题</div>';
+        return;
+      }
+      tocList.innerHTML = items.map(h => {
+        const slug = h.text.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '');
+        const cls = ['toc-item', `toc-h${h.level}`].join(' ');
+        return `<a class="${cls}" onclick="scrollToHeading('${slug}')">${h.text}</a>`;
+      }).join('');
+    }
+    function scrollToHeading(slug) {
+      const el = document.getElementById(slug);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    // ─────────────────────────────────────────────
+    // 统计
+    // ─────────────────────────────────────────────
+    function updateStats(md) {
+      const statsBar = document.getElementById('statsBar');
+      const words = md.trim().split(/\s+/).filter(Boolean).length;
+      const chars = md.length;
+      const readMin = Math.max(1, Math.round(words / 200));
+      document.getElementById('statWords').textContent = words.toLocaleString() + ' 单词';
+      document.getElementById('statChars').textContent = chars.toLocaleString() + ' 字符';
+      document.getElementById('statRead').textContent = `~${readMin} 分钟阅读`;
+      statsBar.style.display = 'flex';
+    }
+    // ─────────────────────────────────────────────
+    // 标签页（添加 dirty 跟踪）
+    // ─────────────────────────────────────────────
+    function createTab(name, content) {
+      const id = 'tab-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5);
+      tabs.push({ 
+        id, 
+        name, 
+        content,
+        savedContent: content,  // 保存初始内容用于判断未保存
+        dirty: false
+      });
+      renderTabs();
+      switchTab(id);
+    }
+
+    function switchTab(id) {
+      activeTabId = id;
+      const tab = tabs.find(t => t.id === id);
+      renderTabs();
+      if (tab) {
+        document.getElementById('editorTextarea').value = tab.content;
+        updatePreview(tab.content);
+      }
+    }
+
+    function closeTab(id) {
+      const tab = tabs.find(t => t.id === id);
+      // 如果有未保存更改，询问用户
+      if (tab && tab.dirty) {
+        if (!confirm(`文件“${tab.name}”有未保存的更改，确定关闭吗？`)) {
+          return; // 取消关闭
+        }
+      }
+      tabs = tabs.filter(t => t.id !== id);
+      if (activeTabId === id) {
+        activeTabId = tabs.length ? tabs[tabs.length - 1].id : null;
+        if (activeTabId) switchTab(activeTabId);
+        else {
+          document.getElementById('editorTextarea').value = '';
+          updatePreview(null);
+          document.getElementById('tocList').innerHTML = '<div style="padding:20px 16px;font-size:0.8rem;color:var(--text3);font-style:italic;">打开 Markdown 文件查看目录</div>';
+          document.getElementById('statsBar').style.display = 'none';
+        }
+      }
+      renderTabs();
+    }
+
+    function renderTabs() {
+      const bar = document.getElementById('tabBar');
+      if (!tabs.length) {
+        bar.innerHTML = '<div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text3);padding:0 4px;">无打开文件</div><div class="tab-bar-end"><button class="btn" id="newTabBtn" style="font-size:0.7rem" onclick="newTab()">+ 新建</button></div>';
+        return;
+      }
+      const tabsHtml = tabs.map(t => {
+        const active = t.id === activeTabId ? ' active' : '';
+        const unsavedMark = t.dirty ? '<span class="unsaved-mark" title="有未保存的更改"></span>' : '';
+        return `<div class="tab${active}" onclick="switchTab('${t.id}')">
+    <span class="tab-name" title="${t.name}">${t.name}</span>
+    ${unsavedMark}
+    <span class="tab-close" onclick="event.stopPropagation();closeTab('${t.id}')">✕</span>
+  </div>`;
+      }).join('');
+      bar.innerHTML = tabsHtml + `<div class="tab-bar-end"><button class="btn" style="font-size:0.7rem" onclick="newTab()">+ 新建</button></div>`;
+    }
+
+    function newTab() {
+      createTab('无标题.md', '');
+      setViewMode('split');
+    }
+
+    // ─────────────────────────────────────────────
+    // 文件处理
+    // ─────────────────────────────────────────────
+    function handleFiles(files) {
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => createTab(file.name, e.target.result);
+        reader.readAsText(file);
+      });
+    }
+    document.getElementById('fileInput').addEventListener('change', e => handleFiles(e.target.files));
+    // 拖放
+    const mainArea = document.getElementById('mainArea');
+    const dropOverlay = document.getElementById('dropOverlay');
+    mainArea.addEventListener('dragover', e => { e.preventDefault(); dropOverlay.classList.add('active'); });
+    mainArea.addEventListener('dragleave', e => { if (!mainArea.contains(e.relatedTarget)) dropOverlay.classList.remove('active'); });
+    mainArea.addEventListener('drop', e => {
+      e.preventDefault();
+      dropOverlay.classList.remove('active');
+      handleFiles(e.dataTransfer.files);
+    });
+    // 从剪贴板粘贴
+    document.addEventListener('paste', e => {
+      if (document.activeElement === document.getElementById('editorTextarea')) return;
+      const text = e.clipboardData.getData('text');
+      if (text && text.length > 50) createTab('粘贴内容.md', text);
+    });
+    // ─────────────────────────────────────────────
+    // 编辑器同步（同时更新 dirty 状态）
+    // ─────────────────────────────────────────────
+    let renderTimeout;
+    document.getElementById('editorTextarea').addEventListener('input', function () {
+      if (!activeTabId) return;
+      const tab = tabs.find(t => t.id === activeTabId);
+      if (tab) {
+        tab.content = this.value;
+        // 更新 dirty 状态
+        const newDirty = (tab.content !== tab.savedContent);
+        if (tab.dirty !== newDirty) {
+          tab.dirty = newDirty;
+          renderTabs(); // 更新标签栏显示未保存标记
+        }
+      }
+      clearTimeout(renderTimeout);
+      renderTimeout = setTimeout(() => updatePreview(this.value), 250);
+    });
+    // ─────────────────────────────────────────────
+    // 视图模式
+    // ─────────────────────────────────────────────
+    function setViewMode(mode) {
+      viewMode = mode;
+      const ca = document.getElementById('contentArea');
+      const ep = document.getElementById('editorPane');
+      ca.className = 'content-area';
+      if (mode === 'split') { ca.classList.add('split'); ep.classList.add('show'); }
+      else if (mode === 'editor-only') { ca.classList.add('editor-only'); ep.classList.add('show'); }
+      else { ep.classList.remove('show'); }
+      document.getElementById('modePreview').classList.toggle('active', mode === 'preview');
+      document.getElementById('modeSplit').classList.toggle('active', mode === 'split');
+      document.getElementById('modeEditor').classList.toggle('active', mode === 'editor-only');
+      // 切换滚动同步
+      setupSplitScroll();
+    }
+    document.getElementById('modePreview').onclick = () => setViewMode('preview');
+    document.getElementById('modeSplit').onclick = () => setViewMode('split');
+    document.getElementById('modeEditor').onclick = () => setViewMode('editor-only');
+    // ─────────────────────────────────────────────
+    // 侧边栏切换
+    // ─────────────────────────────────────────────
+    document.getElementById('toggleSidebar').onclick = () => {
+      document.getElementById('app').classList.toggle('no-sidebar');
+    };
+    // ─────────────────────────────────────────────
+    // 宽屏模式
+    // ─────────────────────────────────────────────
+    document.getElementById('toggleWide').onclick = function () {
+      wideMode = !wideMode;
+      document.getElementById('proseContainer').classList.toggle('wide', wideMode);
+      this.classList.toggle('active', wideMode);
+    };
+    // ─────────────────────────────────────────────
+    // 字体大小
+    // ─────────────────────────────────────────────
+    const fontBtns = ['fontSmall', 'fontMed', 'fontLarge'];
+    fontBtns.forEach(btnId => {
+      document.getElementById(btnId).onclick = function () {
+        fontSize = this.dataset.size;
+        const prose = document.getElementById('proseContent');
+        prose.className = 'prose ' + fontSize;
+        fontBtns.forEach(id => document.getElementById(id).classList.remove('active'));
+        this.classList.add('active');
+      };
+    });
+    // ─────────────────────────────────────────────
+    // 主题（让 Mermaid 也跟随变化）
+    // ─────────────────────────────────────────────
+    document.getElementById('themeSelect').onchange = function () {
+      document.documentElement.setAttribute('data-theme', this.value);
+      // 切换 hljs 主题
+      const hljsLink = document.getElementById('hljs-theme');
+      if (this.value === 'light' || this.value === 'sepia') {
+        hljsLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+      } else if (this.value === 'forest') {
+        hljsLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/monokai-sublime.min.css';
+      } else {
+        hljsLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css';
+      }
+
+      // 切换 Mermaid 主题
+      let mermaidTheme = 'dark';
+      if (this.value === 'light' || this.value === 'sepia') {
+        mermaidTheme = 'default';
+      } else if (this.value === 'forest') {
+        mermaidTheme = 'forest'; // mermaid 可能没有 forest，但可以尝试
+      }
+      // 重新初始化 mermaid 配置
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: mermaidTheme,
+        themeVariables: { darkMode: this.value === '' ? true : false },
+        securityLevel: 'loose',
+      });
+      // 重新渲染所有 mermaid 图表
+      runMermaid();
+    };
+    // ─────────────────────────────────────────────
+    // 打印
+    // ─────────────────────────────────────────────
+    document.getElementById('printBtn').onclick = () => window.print();
+    // ─────────────────────────────────────────────
+    // 保存本地功能（保存当前标签内容，并清除 dirty）
+    // ─────────────────────────────────────────────
+    document.getElementById('saveBtn').onclick = function () {
+      if (!activeTabId) {
+        alert('没有打开的标签页可保存');
+        return;
+      }
+      const tab = tabs.find(t => t.id === activeTabId);
+      if (!tab) return;
+      // 使用标签名作为默认文件名，若为“无标题.md”则加上时间戳避免覆盖
+      let filename = tab.name;
+      if (filename === '无标题.md' || filename === '粘贴内容.md') {
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}.${now.getMinutes().toString().padStart(2, '0')}.${now.getSeconds().toString().padStart(2, '0')}`;
+        filename = filename.replace('.md', `_${timestamp}.md`);
+      }
+      const blob = new Blob([tab.content], { type: 'text/markdown;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(link.href);
+
+      // 保存后更新 savedContent 并清除 dirty 标记
+      tab.savedContent = tab.content;
+      tab.dirty = false;
+      renderTabs(); // 更新标签栏（移除未保存标记）
+
+      // 按钮反馈
+      const btn = this;
+      btn.textContent = '✓已保存';
+      setTimeout(() => {
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>保存`;
+      }, 1200);
+    };
+    // ─────────────────────────────────────────────
+    // 搜索
+    // ─────────────────────────────────────────────
+    document.getElementById('searchBtn').onclick = () => {
+      document.getElementById('searchOverlay').classList.toggle('show');
+      if (document.getElementById('searchOverlay').classList.contains('show')) {
+        document.getElementById('searchInput').focus();
+      }
+    };
+    document.getElementById('searchClose').onclick = () => {
+      document.getElementById('searchOverlay').classList.remove('show');
+      clearSearch();
+    };
+    document.getElementById('searchInput').oninput = doSearch;
+    document.getElementById('searchNext').onclick = () => navigateSearch(1);
+    document.getElementById('searchPrev').onclick = () => navigateSearch(-1);
+    function doSearch() {
+      clearSearch();
+      const q = document.getElementById('searchInput').value.trim();
+      if (!q) { document.getElementById('searchCount').textContent = ''; return; }
+      const prose = document.getElementById('proseContent');
+      const text = prose.innerHTML;
+      // 高亮匹配项
+      const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      prose.innerHTML = prose.innerHTML.replace(re, m => `<mark class="search-highlight" style="background:var(--accent);color:var(--bg);border-radius:2px">${m}</mark>`);
+      searchMatches = Array.from(prose.querySelectorAll('.search-highlight'));
+      document.getElementById('searchCount').textContent = searchMatches.length ? `1 / ${searchMatches.length}` : '未找到结果';
+      searchIndex = 0;
+      if (searchMatches.length) searchMatches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    function navigateSearch(dir) {
+      if (!searchMatches.length) return;
+      searchIndex = (searchIndex + dir + searchMatches.length) % searchMatches.length;
+      searchMatches.forEach((m, i) => m.style.background = i === searchIndex ? 'var(--accent2)' : 'var(--accent)');
+      searchMatches[searchIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('searchCount').textContent = `${searchIndex + 1} / ${searchMatches.length}`;
+    }
+    function clearSearch() {
+      const prose = document.getElementById('proseContent');
+      prose.querySelectorAll('.search-highlight').forEach(el => {
+        el.replaceWith(document.createTextNode(el.textContent));
+      });
+      searchMatches = [];
+    }
+    // 键盘快捷键
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); document.getElementById('searchBtn').click(); }
+      if (e.key === 'Escape') {
+        document.getElementById('searchOverlay').classList.remove('show');
+        clearSearch();
+      }
+      if (e.key === 'Enter' && document.getElementById('searchOverlay').classList.contains('show')) {
+        navigateSearch(e.shiftKey ? -1 : 1);
+      }
+    });
+    // ─────────────────────────────────────────────
+    // 阅读进度与目录高亮
+    // ─────────────────────────────────────────────
+    document.getElementById('previewPane').addEventListener('scroll', function () {
+      const { scrollTop, scrollHeight, clientHeight } = this;
+      const pct = scrollHeight > clientHeight ? (scrollTop / (scrollHeight - clientHeight)) * 100 : 0;
+      document.getElementById('progressBar').style.width = pct + '%';
+      // 高亮当前目录项
+      const headings = document.getElementById('proseContent').querySelectorAll('h1,h2,h3,h4');
+      let active = null;
+      headings.forEach(h => { if (h.offsetTop - 80 <= scrollTop + 10) active = h.id; });
+      document.querySelectorAll('.toc-item').forEach(el => el.classList.remove('active'));
+      if (active) {
+        const tocItem = document.querySelector(`.toc-item[onclick*="${active}"]`);
+        if (tocItem) tocItem.classList.add('active');
+      }
+    });
+    // ─────────────────────────────────────────────
+    // 复制代码 (已在 renderer 中使用)
+    // ─────────────────────────────────────────────
+    window.copyCode = function (btn, id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      navigator.clipboard.writeText(el.innerText).then(() => {
+        btn.textContent = '✓已复制';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1800);
+      });
+    };
+    // ─────────────────────────────────────────────
+    // Mermaid 初始化
+    // ─────────────────────────────────────────────
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      themeVariables: { darkMode: true, background: 'transparent' },
+      securityLevel: 'loose',
+    });
+    // ─────────────────────────────────────────────
+    // 分屏同步滚动实现
+    // ─────────────────────────────────────────────
+    let isEditorScrolling = false;
+    let isPreviewScrolling = false;
+    const editorScroll = document.getElementById('editorTextarea');
+    const previewScroll = document.getElementById('previewPane');
+    function syncScroll(source, target, percent) {
+      if (target === editorScroll) isEditorScrolling = true;
+      else if (target === previewScroll) isPreviewScrolling = true;
+      target.scrollTop = percent * (target.scrollHeight - target.clientHeight);
+      // 延迟重置标志，避免滚动事件循环触发
+      setTimeout(() => {
+        if (target === editorScroll) isEditorScrolling = false;
+        else if (target === previewScroll) isPreviewScrolling = false;
+      }, 50);
+    }
+    function handleEditorScroll() {
+      if (!isPreviewScrolling && viewMode === 'split') {
+        const percent = editorScroll.scrollTop / (editorScroll.scrollHeight - editorScroll.clientHeight) || 0;
+        syncScroll(editorScroll, previewScroll, percent);
+      }
+    }
+    function handlePreviewScroll() {
+      if (!isEditorScrolling && viewMode === 'split') {
+        const percent = previewScroll.scrollTop / (previewScroll.scrollHeight - previewScroll.clientHeight) || 0;
+        syncScroll(previewScroll, editorScroll, percent);
+      }
+    }
+    function setupSplitScroll() {
+      // 先移除旧监听，再根据模式添加
+      editorScroll.removeEventListener('scroll', handleEditorScroll);
+      previewScroll.removeEventListener('scroll', handlePreviewScroll);
+      if (viewMode === 'split') {
+        editorScroll.addEventListener('scroll', handleEditorScroll);
+        previewScroll.addEventListener('scroll', handlePreviewScroll);
+      }
+    }
+    // 初始化时根据默认视图模式设置监听
+    setupSplitScroll();
+    // ─────────────────────────────────────────────
+    // 示例内容 (中文演示)
+    // ─────────────────────────────────────────────
+    const DEMO = `# MarkFlow 演示
+> 一个强大、美观的 Markdown 阅读器，满足你的一切需求。
+
+## 排版与格式
+**粗体文字**，*斜体文字*，~~删除线~~，以及 \`行内代码\`。
+
+可以用 ==高亮标记== 文字，也可以创建[链接](https://example.com)。
+
+---
+
+## 数学公式
+行内公式: $E = mc^2$ 和 $\\sin^2\\theta + \\cos^2\\theta = 1$
+
+块级公式:
+$$
+\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}
+$$
+
+## 代码高亮
+\`\`\`python
+def fibonacci(n: int) -> list[int]:
+    \"\"\"生成不超过 n 的斐波那契数列。\"\"\"
+    seq = [0, 1]
+    while seq[-1] + seq[-2] < n:
+        seq.append(seq[-1] + seq[-2])
+    return seq
+result = fibonacci(100)
+print(f"找到 {len(result)} 个数: {result[:5]}…")
+\`\`\`
+
+\`\`\`javascript
+// 防抖函数
+const debounce = (fn, delay) => {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+};
+\`\`\`
+
+## 图表 (Mermaid)
+\`\`\`mermaid
+graph TD
+  A[开始] --> B{这是 Markdown?}
+  B -->|是| C[优美渲染]
+  B -->|否| D[先转换]
+  C --> E[阅读 & 享受]
+  D --> C
+\`\`\`
+
+## 表格
+| 功能 | 支持 | 备注 |
+|---------|:-------:|-------|
+| GFM 表格 | ✅ | 完整支持 |
+| 任务列表 | ✅ | 可勾选框 |
+| 数学公式 (KaTeX) | ✅ | 行内 & 块级 |
+| Mermaid 图表 | ✅ | 流程图、时序图、甘特图 |
+| 代码高亮 | ✅ | 190+ 种语言 |
+| 脚注 | ✅ | 编号引用[^3] |
+
+## 任务列表
+- [x] 构建美观的 Markdown 阅读器
+- [x] 添加数学公式支持
+- [x] 实现语法高亮
+- [x] 添加 Mermaid 图表支持
+- [ ] 添加协同编辑
+- [ ] 移动端 App 版本
+
+## 引用块
+> “预测未来的最好方法就是创造它。”
+>
+> — 艾伦·凯
+
+## 脚注
+敏捷的棕色狐狸[^1]跳过懒狗[^2]。
+
+[^1]: 狐狸以其敏捷著称。
+[^2]: 狗只是想休息一天。
+[^3]: 表格中的功能说明也可以添加脚注。
+
+---
+
+*MarkFlow —— 始终如一的优美 Markdown 体验。*
+`;
+    document.getElementById('loadDemo').onclick = () => createTab('示例.md', DEMO);
+  </script>
+</body>
+
+</html>
