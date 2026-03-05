@@ -1514,7 +1514,7 @@
 					tap(t) {
 						switch (t) {
 							case "help":
-								window.open("https://github.com/ZZHS2004");
+								window.open("https://github.com/ChronoKnight-ZZH/ChronoKnight-ZZH.github.io");
 								break;
 							case "reset":
 								this.resetd = !0
