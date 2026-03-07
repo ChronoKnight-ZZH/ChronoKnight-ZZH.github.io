@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>静域密码 · 含特殊字符可选</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #f0f4fa 0%, #e6ecf5 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 2.5rem;
+            box-shadow: 0 25px 45px -12px rgba(0, 20, 40, 0.35), inset 0 1px 2px rgba(255,255,255,0.7);
+            width: 100%;
+            max-width: 620px;
+            padding: 2.2rem 2rem 2.5rem;
+            border: 1px solid rgba(255,255,255,0.5);
+            transition: all 0.2s;
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin: 0 0 0.4rem 0;
+            background: linear-gradient(135deg, #1f2b3c, #2c3e5c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sub {
+            font-size: 0.95rem;
+            color: #4a5b74;
+            margin-bottom: 2rem;
+            padding-left: 0.2rem;
+            border-left: 4px solid #8a9bb8;
+            padding-left: 1rem;
+            font-weight: 400;
+        }
+        .input-group {
+            margin-bottom: 1.8rem;
+        }
+        label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: #1e2b3f;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.01em;
+        }
+        label i {
+            font-style: normal;
+            color: #4e6b8c;
+            font-weight: 400;
+            font-size: 0.9rem;
+        }
+        input:not([type="range"]):not([type="checkbox"]) {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            background: rgba(255,255,255,0.7);
+            border: 2px solid rgba(164, 184, 209, 0.3);
+            border-radius: 1.8rem;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+            color: #122334;
+            font-weight: 450;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);
+        }
+        input:not([type="range"]):not([type="checkbox"]):focus {
+            border-color: #6c8fc9;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(98, 131, 184, 0.15);
+        }
+        input::placeholder {
+            color: #8a9db9;
+            font-weight: 300;
+            font-size: 0.95rem;
+        }
+        .length-row {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+        .length-row span {
+            background: #1e2f43;
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+            padding: 0.4rem 1rem;
+            border-radius: 3rem;
+            min-width: 3.8rem;
+            text-align: center;
+            box-shadow: 0 6px 12px -6px rgba(0,32,64,0.4);
+        }
+        input[type=range] {
+            flex: 1;
+            height: 7px;
+            -webkit-appearance: none;
+            background: linear-gradient(90deg, #3f5e86, #92b0d9);
+            border-radius: 20px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px #1e3a5f;
+            border: 2px solid #1e3b5c;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .special-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(210, 225, 245, 0.4);
+            padding: 0.7rem 1.5rem;
+            border-radius: 3rem;
+            margin: 1.5rem 0 2rem;
+            border: 1px solid rgba(90, 120, 160, 0.3);
+        }
+        .special-option label {
+            margin-bottom: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            color: #1e3a5f;
+        }
+        .special-option input[type="checkbox"] {
+            width: 1.2rem;
+            height: 1.2rem;
+            accent-color: #2d4b7a;
+            margin: 0;
+        }
+        button {
+            background: #1f324b;
+            border: none;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            padding: 0.9rem 2rem;
+            border-radius: 3rem;
+            cursor: pointer;
+            box-shadow: 0 15px 25px -10px #122b44;
+            transition: all 0.15s;
+            border: 1px solid rgba(255,255,255,0.2);
+            letter-spacing: 0.3px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+        button:hover {
+            background: #254461;
+            transform: scale(1.02);
+            box-shadow: 0 20px 30px -8px #0f253b;
+        }
+        button:active {
+            transform: scale(0.98);
+            background: #182b41;
+        }
+        button:disabled {
+            opacity: 0.6;
+            pointer-events: none;
+            filter: grayscale(0.4);
+        }
+        .result-area {
+            background: rgba(0,0,0,0.02);
+            border-radius: 2rem;
+            padding: 1rem 1.5rem;
+            margin: 2rem 0 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            border: 2px dashed rgba(108, 128, 160, 0.3);
+            backdrop-filter: blur(5px);
+        }
+        .result-area input {
+            flex: 2;
+            min-width: 200px;
+            background: white;
+            border: 2px solid #cdddec;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            padding: 0.7rem 1.2rem;
+            border-radius: 2rem;
+            color: #101f30;
+        }
+        .copy-btn {
+            background: white;
+            color: #1f324b;
+            box-shadow: 0 4px 12px rgba(0,20,40,0.1);
+            padding: 0.7rem 1.6rem;
+            font-size: 1rem;
+            border: 1px solid #b9cbee;
+        }
+        .copy-btn:hover {
+            background: #ecf3ff;
+            color: #102433;
+        }
+        .toast {
+            text-align: center;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            min-height: 1.8rem;
+            color: #2d4b6e;
+            font-weight: 450;
+            transition: opacity 0.2s;
+        }
+        .footer-note {
+            font-size: 0.82rem;
+            color: #4f688b;
+            border-top: 1px solid rgba(108, 128, 160, 0.2);
+            margin-top: 2rem;
+            padding-top: 1.2rem;
+            text-align: center;
+            background: rgba(255,255,255,0.4);
+            border-radius: 3rem;
+            padding: 0.8rem 1.5rem;
+        }
+        .footer-note code {
+            background: #dfe8f5;
+            padding: 0.2rem 0.6rem;
+            border-radius: 30px;
+            font-weight: 500;
+            color: #112233;
+        }
+        .lock-icon {
+            font-size: 1.7rem;
+            line-height: 1;
+        }
+        .error-msg {
+            color: #b13e4b;
+            background: #ffe6e9;
+            padding: 0.7rem 1.2rem;
+            border-radius: 3rem;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            border: 1px solid #fcc2cd;
+        }
+        .charset-preview {
+            font-size: 0.8rem;
+            color: #2a4d74;
+            background: rgba(255,255,255,0.6);
+            border-radius: 30px;
+            padding: 0.3rem 1rem;
+            margin-top: 0.8rem;
+            text-align: center;
+            border: 1px dashed #a0b8d5;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>
+            <span class="lock-icon">🔐</span> 静域密码+
+        </h1>
+    </div>
+    <div class="sub">主密码 + 平台名 → 唯一密码 · 可包含特殊字符</div>
+
+    <!-- 主密码 -->
+    <div class="input-group">
+        <label>🔑 固定主密码 <i>(主密码)</i></label>
+        <input type="password" id="masterPwd" placeholder="例如：YourStrongMasterKey" autocomplete="off">
+    </div>
+
+    <!-- 平台/应用名 -->
+    <div class="input-group">
+        <label>📱 平台/应用名称 <i>(加密密码, 如 app, 网页名)</i></label>
+        <input type="text" id="appName" placeholder="例如：google, facebook, github" autocomplete="off">
+    </div>
+
+    <!-- 长度调节 -->
+    <div class="input-group">
+        <label>🔢 密码长度 <span style="margin-left: auto; font-weight: 400;">滑动调节</span></label>
+        <div class="length-row">
+            <span id="lengthValue">12</span>
+            <input type="range" id="lengthSlider" min="8" max="16" value="12" step="1">
+        </div>
+    </div>
+
+    <!-- 新增：特殊字符选项 -->
+    <div class="special-option">
+        <label>
+            <input type="checkbox" id="specialCharCheck"> 包含特殊字符
+        </label>
+        <span style="font-size:0.9rem; color:#1f3b5c;">(如 !@#$%^&*()_+[]{} )</span>
+    </div>
+
+    <!-- 生成按钮 -->
+    <button id="generateBtn">
+        <span>⚡</span> 生成加密密码
+    </button>
+
+    <!-- 结果区域 -->
+    <div class="result-area">
+        <input type="text" id="outputPassword" readonly placeholder="生成的密码" value="">
+        <button class="copy-btn" id="copyBtn" title="复制到剪贴板">📋 复制</button>
+    </div>
+    <div id="toastMessage" class="toast"></div>
+
+    <!-- 当前字符集预览（动态提醒） -->
+    <div class="charset-preview" id="charsetPreview">当前字符集：字母 + 数字 (62字符)</div>
+
+    <!-- 底部说明 -->
+    <div class="footer-note">
+        ⚙️ PBKDF2-HMAC-SHA256 · 迭代10000次 · 盐=平台名+长度<br>
+        勾选特殊字符后密码可包含 <code>!@#$%^&*()_+[]{}:;</code> 等 (共80字符)
+    </div>
+</div>
+
+<script>
+    (function() {
+        // DOM 元素
+        const masterInput = document.getElementById('masterPwd');
+        const appInput = document.getElementById('appName');
+        const lengthSlider = document.getElementById('lengthSlider');
+        const lengthSpan = document.getElementById('lengthValue');
+        const specialCheck = document.getElementById('specialCharCheck');
+        const generateBtn = document.getElementById('generateBtn');
+        const outputField = document.getElementById('outputPassword');
+        const copyBtn = document.getElementById('copyBtn');
+        const toast = document.getElementById('toastMessage');
+        const charsetPreview = document.getElementById('charsetPreview');
+
+        // 字符集定义
+        const CHARSET_ALPHANUM = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'; // 62
+        // 特殊字符 (选取常用且不易引起冲突的16个)
+        const CHARSET_SPECIAL = '!@#$%^&*()_+[]{}:;';  // 共16个字符
+        // 合并字符集 (动态获取)
+        function getCurrentCharset() {
+            return specialCheck.checked ? CHARSET_ALPHANUM + CHARSET_SPECIAL : CHARSET_ALPHANUM;
+        }
+
+        // 更新长度显示
+        function updateLengthDisplay() {
+            lengthSpan.textContent = lengthSlider.value;
+        }
+        lengthSlider.addEventListener('input', updateLengthDisplay);
+        updateLengthDisplay();
+
+        // 更新字符集预览
+        function updateCharsetPreview() {
+            const charset = getCurrentCharset();
+            const len = charset.length;
+            if (specialCheck.checked) {
+                charsetPreview.textContent = `当前字符集：字母 + 数字 + 特殊字符 (${len}字符) · 例如 ${charset.slice(0,20)}…`;
+            } else {
+                charsetPreview.textContent = `当前字符集：字母 + 数字 (${len}字符)`;
+            }
+        }
+        specialCheck.addEventListener('change', updateCharsetPreview);
+        updateCharsetPreview(); // 初始化
+
+        // 显示临时消息
+        function showMessage(msg, isError = false) {
+            toast.textContent = msg;
+            toast.style.color = isError ? '#b13e4b' : '#2d4b6e';
+            setTimeout(() => {
+                if (toast.textContent === msg) {
+                    toast.textContent = '';
+                }
+            }, 2600);
+        }
+
+        // 检查 Web Crypto
+        if (!window.crypto || !window.crypto.subtle) {
+            toast.innerHTML = '❌ 浏览器不支持 Web Crypto API（非安全环境）。';
+            toast.style.color = '#b13e4b';
+            generateBtn.disabled = true;
+        }
+
+        // 核心生成函数
+        async function generateDerivedPassword(master, app, length, useSpecial) {
+            if (!master || !app) {
+                throw new Error('主密码和平台名称都不能为空');
+            }
+            const enc = new TextEncoder();
+            const masterBuffer = enc.encode(master);
+            // 盐 = 平台名 + ":" + 长度 + ":special?" (确保不同选项生成完全不同密码)
+            // 增加特殊标记，避免与未勾选时碰撞
+            const specialFlag = useSpecial ? 's1' : 's0';
+            const saltString = `${app}:${length}:${specialFlag}`;
+            const saltBuffer = enc.encode(saltString);
+
+            const key = await crypto.subtle.importKey(
+                'raw',
+                masterBuffer,
+                { name: 'PBKDF2' },
+                false,
+                ['deriveBits']
+            );
+
+            const bits = await crypto.subtle.deriveBits(
+                {
+                    name: 'PBKDF2',
+                    salt: saltBuffer,
+                    iterations: 10000,
+                    hash: 'SHA-256'
+                },
+                key,
+                256
+            );
+
+            const bytes = new Uint8Array(bits);
+            const charset = useSpecial ? CHARSET_ALPHANUM + CHARSET_SPECIAL : CHARSET_ALPHANUM;
+            const charsetLen = charset.length;
+
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                const index = bytes[i] % charsetLen;
+                result += charset[index];
+            }
+            return result;
+        }
+
+        // 生成按钮逻辑
+        let isGenerating = false;
+        generateBtn.addEventListener('click', async () => {
+            if (isGenerating) return;
+
+            const master = masterInput.value;
+            const app = appInput.value;
+            const len = parseInt(lengthSlider.value, 10);
+            const useSpecial = specialCheck.checked;
+
+            if (!master) {
+                showMessage('请输入主密码', true);
+                masterInput.focus();
+                return;
+            }
+            if (!app) {
+                showMessage('请输入平台/应用名称', true);
+                appInput.focus();
+                return;
+            }
+
+            isGenerating = true;
+            generateBtn.disabled = true;
+            outputField.value = '';
+            showMessage('⏳ 生成中...');
+
+            try {
+                const password = await generateDerivedPassword(master, app, len, useSpecial);
+                outputField.value = password;
+                showMessage('✅ 密码已生成');
+            } catch (err) {
+                console.error(err);
+                showMessage('❌ 生成失败: ' + (err.message || '未知错误'), true);
+                outputField.value = '';
+            } finally {
+                isGenerating = false;
+                generateBtn.disabled = false;
+            }
+        });
+
+        // 复制到剪贴板
+        copyBtn.addEventListener('click', async () => {
+            const pwd = outputField.value;
+            if (!pwd) {
+                showMessage('没有可复制的密码', true);
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(pwd);
+                showMessage('📋 密码已复制');
+            } catch (err) {
+                // 降级
+                try {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = pwd;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showMessage('📋 复制成功 (兼容)');
+                } catch (e) {
+                    showMessage('❌ 复制失败，请手动复制', true);
+                }
+            }
+        });
+
+        // 回车快速生成
+        [masterInput, appInput].forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    generateBtn.click();
+                }
+            });
+        });
+
+        // 非安全上下文提示
+        if (!window.isSecureContext) {
+            toast.innerHTML = '⚠️ 非安全上下文，Web Crypto可能受限';
+            toast.style.color = '#b7620c';
+        }
+    })();
+</script>
+<noscript><div style="color:red; text-align:center;">请启用JavaScript</div></noscript>
+</body>
+</html>
