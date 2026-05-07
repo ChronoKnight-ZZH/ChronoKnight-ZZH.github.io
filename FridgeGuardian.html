@@ -1,0 +1,1988 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冰箱管家 - Fridge Guardian | 效果展示</title>
+    <style>
+        :root {
+            --bg: #f0f4f3;
+            --card-bg: #ffffff;
+            --primary: #2ecc9e;
+            --primary-dark: #239b7a;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --safe: #27ae60;
+            --text: #2c3e50;
+            --text-secondary: #6b7d8e;
+            --border: #e8edf2;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.15);
+            --radius-sm: 8px;
+            --radius: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --phone-width: 400px;
+            --phone-height: 820px;
+            --header-height: 50px;
+            --tab-height: 64px;
+            --safe-bottom: 20px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(160deg, #e8f5f0 0%, #dceef5 30%, #f5f0e8 60%, #eef2e8 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+            background-attachment: fixed;
+        }
+
+        /* 装饰背景圆 */
+        .bg-decoration {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.35;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-decoration.c1 {
+            width: 300px;
+            height: 300px;
+            background: #a8e6cf;
+            top: -60px;
+            left: -80px;
+        }
+        .bg-decoration.c2 {
+            width: 250px;
+            height: 250px;
+            background: #ffd3b6;
+            bottom: -50px;
+            right: -70px;
+        }
+        .bg-decoration.c3 {
+            width: 200px;
+            height: 200px;
+            background: #b8dff0;
+            top: 40%;
+            left: 55%;
+        }
+
+        /* 手机模拟器 */
+        .phone-frame {
+            position: relative;
+            z-index: 1;
+            width: var(--phone-width);
+            height: var(--phone-height);
+            background: #1a1d21;
+            border-radius: 36px;
+            padding: 10px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.25),
+                0 0 0 3px #2a2d31,
+                0 0 0 6px #1a1d21,
+                0 0 0 8px #353a40;
+            flex-shrink: 0;
+        }
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #f8faf9;
+            border-radius: 28px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 状态栏 */
+        .status-bar {
+            height: 36px;
+            background: #f8faf9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 22px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #2c3e50;
+            flex-shrink: 0;
+            user-select: none;
+        }
+        .status-bar .time {
+            letter-spacing: 0.5px;
+        }
+        .status-icons {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+        .status-icons .battery {
+            width: 22px;
+            height: 10px;
+            border: 1.5px solid #2c3e50;
+            border-radius: 2px;
+            padding: 1.5px;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        .status-icons .battery::after {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2.5px;
+            height: 5px;
+            background: #2c3e50;
+            border-radius: 0 1px 1px 0;
+        }
+        .status-icons .battery-fill {
+            width: 75%;
+            height: 100%;
+            background: #2c3e50;
+            border-radius: 1px;
+        }
+
+        /* 动态岛 */
+        .dynamic-island {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90px;
+            height: 24px;
+            background: #1a1d21;
+            border-radius: 16px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* 页面头部 */
+        .page-header {
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 16px;
+            flex-shrink: 0;
+            position: relative;
+            background: #f8faf9;
+            z-index: 2;
+        }
+        .page-header .title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.3px;
+        }
+        .page-header .header-action {
+            position: absolute;
+            right: 16px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #f0f4f3;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: var(--transition);
+            color: var(--text-secondary);
+        }
+        .page-header .header-action:hover {
+            background: #e4ece9;
+            color: var(--text);
+        }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            background: #f8faf9;
+            position: relative;
+            padding-bottom: 0;
+        }
+        .main-content::-webkit-scrollbar {
+            width: 0;
+        }
+
+        /* 页面容器 */
+        .page {
+            display: none;
+            flex-direction: column;
+            min-height: 100%;
+            animation: fadeInPage 0.3s ease;
+        }
+        .page.active {
+            display: flex;
+        }
+        @keyframes fadeInPage {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 分类标签栏 */
+        .category-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 4px 14px 10px;
+            flex-shrink: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            position: sticky;
+            top: 0;
+            background: #f8faf9;
+            z-index: 3;
+            padding-top: 8px;
+        }
+        .category-tabs::-webkit-scrollbar {
+            display: none;
+        }
+        .category-tab {
+            flex-shrink: 0;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1.5px solid var(--border);
+            background: #fff;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            white-space: nowrap;
+            user-select: none;
+            letter-spacing: -0.2px;
+        }
+        .category-tab:hover {
+            border-color: #c5d5cf;
+            color: var(--text);
+        }
+        .category-tab.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 3px 12px rgba(46, 204, 158, 0.35);
+        }
+
+        /* 食材列表 */
+        .food-list {
+            padding: 0 14px 90px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .food-list::after {
+            content: '';
+            display: block;
+            height: 20px;
+        }
+        .food-card {
+            background: #fff;
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1.5px solid transparent;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            user-select: none;
+        }
+        .food-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+            border-color: #e0e8e4;
+        }
+        .food-card:active {
+            transform: scale(0.98);
+            transition: 0.1s;
+        }
+        .food-card .card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+        .card-icon.cat-fresh {
+            background: #e8f8f0;
+        }
+        .card-icon.cat-frozen {
+            background: #e8f0fa;
+        }
+        .card-icon.cat-chilled {
+            background: #fef9e8;
+        }
+        .card-icon.cat-dry {
+            background: #f5f0e8;
+        }
+        .card-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .card-info .card-name {
+            font-weight: 650;
+            font-size: 15px;
+            color: var(--text);
+            letter-spacing: -0.2px;
+            margin-bottom: 2px;
+        }
+        .card-info .card-meta {
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .card-info .card-meta span {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .card-right {
+            text-align: right;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+        .days-badge {
+            font-weight: 700;
+            font-size: 13px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+        }
+        .days-badge.safe {
+            background: #e8f8f0;
+            color: #1a7a4c;
+        }
+        .days-badge.warning {
+            background: #fef6e8;
+            color: #b8740a;
+        }
+        .days-badge.danger {
+            background: #fde8e8;
+            color: #c0392b;
+        }
+        .days-badge.expired {
+            background: #fde8e8;
+            color: #92221b;
+            font-weight: 800;
+            animation: pulseExpired 2s ease-in-out infinite;
+        }
+        @keyframes pulseExpired {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
+        }
+        .card-progress {
+            width: 100%;
+            height: 3px;
+            background: #eef2f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+        .card-progress-bar {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease, background 0.5s ease;
+        }
+        .card-progress-bar.safe {
+            background: var(--safe);
+        }
+        .card-progress-bar.warning {
+            background: var(--warning);
+        }
+        .card-progress-bar.danger {
+            background: var(--danger);
+        }
+
+        .card-quick-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 2px;
+        }
+        .card-quick-btn {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #fff;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            white-space: nowrap;
+            font-weight: 500;
+        }
+        .card-quick-btn:hover {
+            background: #f5f8f7;
+            border-color: #c5d5cf;
+            color: var(--text);
+        }
+        .card-quick-btn.consumed-btn:hover {
+            background: #e8f8f0;
+            border-color: var(--safe);
+            color: var(--safe);
+        }
+        .card-quick-btn.discard-btn:hover {
+            background: #fde8e8;
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        /* 浮动按钮 */
+        .fab {
+            position: absolute;
+            bottom: 75px;
+            right: 18px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px rgba(46, 204, 158, 0.45);
+            z-index: 20;
+            transition: var(--transition);
+            line-height: 1;
+        }
+        .fab:hover {
+            transform: scale(1.08);
+            box-shadow: 0 8px 28px rgba(46, 204, 158, 0.55);
+            background: #3dd6a8;
+        }
+        .fab:active {
+            transform: scale(0.93);
+            transition: 0.1s;
+        }
+
+        /* 底部导航 */
+        .bottom-nav {
+            height: var(--tab-height);
+            background: #fff;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding-bottom: var(--safe-bottom);
+            flex-shrink: 0;
+            z-index: 10;
+            box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.04);
+            transform: translateY(-90px);
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 12px;
+            transition: var(--transition);
+            user-select: none;
+            border: none;
+            background: none;
+            font-family: inherit;
+            position: relative;
+        }
+        .nav-item .nav-icon {
+            font-size: 22px;
+            transition: var(--transition);
+            line-height: 1;
+        }
+        .nav-item .nav-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            letter-spacing: -0.1px;
+        }
+        .nav-item.active .nav-label {
+            color: var(--primary-dark);
+        }
+        .nav-item.active .nav-icon {
+            transform: translateY(-2px);
+        }
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            top: -1px;
+            width: 20px;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 0 0 3px 3px;
+        }
+        .nav-badge {
+            position: absolute;
+            top: -2px;
+            right: 4px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        /* 提醒页 */
+        .alert-list {
+            padding: 8px 14px 90px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .alert-list::after {
+            content: '';
+            display: block;
+            height: 20px;
+        }
+        .alert-card {
+            background: #fff;
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--danger);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .alert-card.warning-level {
+            border-left-color: var(--warning);
+        }
+        .alert-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+        .alert-card .alert-emoji {
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+        .alert-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .alert-info .alert-name {
+            font-weight: 650;
+            font-size: 14px;
+            color: var(--text);
+        }
+        .alert-info .alert-days {
+            font-size: 12px;
+            color: var(--danger);
+            font-weight: 600;
+        }
+        .alert-info .alert-days.warn {
+            color: var(--warning);
+        }
+        .alert-action {
+            font-size: 11px;
+            padding: 6px 12px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: #fff;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .alert-action:hover {
+            background: #f5f8f7;
+            border-color: #c5d5cf;
+        }
+
+        /* 统计页 */
+        .stats-content {
+            padding: 8px 14px 90px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .stats-content::after {
+            content: '';
+            display: block;
+            height: 20px;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+        .stat-card h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 12px;
+            letter-spacing: -0.2px;
+        }
+        .stat-row {
+            display: flex;
+            gap: 12px;
+        }
+        .stat-mini {
+            flex: 1;
+            background: #f8faf9;
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            text-align: center;
+        }
+        .stat-mini .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            letter-spacing: -1px;
+        }
+        .stat-mini .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .ring-chart-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            justify-content: center;
+            padding: 8px 0;
+        }
+        .ring-chart {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            flex-shrink: 0;
+        }
+        .ring-chart svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        .ring-chart .ring-bg {
+            fill: none;
+            stroke: #eef2f0;
+            stroke-width: 10;
+        }
+        .ring-chart .ring-fg {
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 10;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.8s ease;
+        }
+        .ring-chart .ring-center-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 18px;
+            color: var(--text);
+        }
+        .ring-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .ring-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .ring-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            height: 120px;
+            padding-top: 8px;
+        }
+        .bar-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            height: 100%;
+            justify-content: flex-end;
+        }
+        .bar-fill {
+            width: 100%;
+            max-width: 48px;
+            border-radius: 8px 8px 4px 4px;
+            transition: height 0.6s ease;
+            cursor: pointer;
+            position: relative;
+            min-width: 28px;
+        }
+        .bar-fill:hover {
+            filter: brightness(0.9);
+            transform: scaleY(1.03);
+            transform-origin: bottom;
+        }
+        .bar-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .bar-value {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        /* 设置页 */
+        .settings-content {
+            padding: 8px 14px 90px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .settings-content::after {
+            content: '';
+            display: block;
+            height: 20px;
+        }
+        .settings-group {
+            background: #fff;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        .settings-group-header {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 12px 16px 6px;
+        }
+        .settings-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 1px solid #f5f6f7;
+            cursor: pointer;
+            transition: var(--transition);
+            gap: 12px;
+        }
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+        .settings-item:hover {
+            background: #fafcfb;
+        }
+        .settings-item .si-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+        .settings-item .si-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .settings-item .si-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        .settings-item .si-value {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: right;
+        }
+        .settings-item .si-arrow {
+            color: #c5cdd5;
+            font-size: 14px;
+        }
+        .toggle-switch {
+            width: 46px;
+            height: 27px;
+            border-radius: 14px;
+            background: #d5dcd8;
+            cursor: pointer;
+            position: relative;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+        .toggle-switch.on {
+            background: var(--primary);
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 21px;
+            height: 21px;
+            border-radius: 50%;
+            background: #fff;
+            transition: var(--transition);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .toggle-switch.on::after {
+            left: 22px;
+        }
+
+        /* 模态弹窗 - 添加食材 */
+        .modal-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 50;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            border-radius: 28px;
+            overflow: hidden;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-sheet {
+            background: #fff;
+            width: 100%;
+            max-height: 85%;
+            border-radius: 20px 20px 0 0;
+            overflow-y: auto;
+            padding: 8px 16px 28px;
+            box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        .modal-handle {
+            width: 32px;
+            height: 4px;
+            background: #d5dcd8;
+            border-radius: 2px;
+            margin: 8px auto 12px;
+        }
+        .modal-sheet h3 {
+            font-size: 17px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 14px;
+            color: var(--text);
+            letter-spacing: -0.3px;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: var(--transition);
+            background: #fafcfb;
+            color: var(--text);
+            outline: none;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(46, 204, 158, 0.1);
+            background: #fff;
+        }
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 12px;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 13px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            letter-spacing: -0.2px;
+            font-family: inherit;
+        }
+        .btn-primary:hover {
+            background: #3dd6a8;
+            box-shadow: 0 4px 16px rgba(46, 204, 158, 0.4);
+        }
+        .btn-primary:active {
+            transform: scale(0.97);
+        }
+        .btn-secondary {
+            width: 100%;
+            padding: 11px;
+            background: #f0f4f3;
+            color: var(--text);
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 8px;
+            font-family: inherit;
+        }
+        .btn-secondary:hover {
+            background: #e4ece9;
+        }
+
+        /* Toast */
+        .toast {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 60;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            white-space: nowrap;
+            letter-spacing: -0.1px;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-4px);
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state .empty-emoji {
+            font-size: 50px;
+            margin-bottom: 10px;
+        }
+        .empty-state p {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* 响应式 */
+        @media (max-width: 460px) {
+            .phone-frame {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+                padding: 0;
+                box-shadow: none;
+                background: transparent;
+            }
+            .phone-screen {
+                border-radius: 0;
+            }
+            .modal-overlay {
+                border-radius: 0;
+            }
+            .bg-decoration {
+                display: none;
+            }
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 装饰背景 -->
+    <div class="bg-decoration c1"></div>
+    <div class="bg-decoration c2"></div>
+    <div class="bg-decoration c3"></div>
+
+    <!-- 手机模拟器 -->
+    <div class="phone-frame" id="phoneFrame">
+        <div class="phone-screen" id="phoneScreen">
+            <!-- 动态岛 -->
+            <div class="dynamic-island"></div>
+
+            <!-- 状态栏 -->
+            <div class="status-bar">
+                <span class="time">9:41</span>
+                <div class="status-icons">
+                    <span>5G</span>
+                    <div class="battery"><div class="battery-fill"></div></div>
+                </div>
+            </div>
+
+            <!-- Toast -->
+            <div class="toast" id="toast"></div>
+
+            <!-- ========== 页面1：食材列表 ========== -->
+            <div class="page active" id="page-food">
+                <div class="page-header">
+                    <span class="title">🧊 冰箱管家</span>
+                </div>
+                <div class="category-tabs" id="categoryTabs">
+                    <div class="category-tab active" data-cat="all">全部</div>
+                    <div class="category-tab" data-cat="fresh">🥬 生鲜</div>
+                    <div class="category-tab" data-cat="frozen">❄️ 冷冻</div>
+                    <div class="category-tab" data-cat="chilled">🧊 冷藏</div>
+                    <div class="category-tab" data-cat="dry">📦 干货</div>
+                </div>
+                <div class="main-content" id="foodListContainer">
+                    <div class="food-list" id="foodList"></div>
+                </div>
+                <button class="fab" id="fabAdd" title="添加食材">+</button>
+            </div>
+
+            <!-- ========== 页面2：提醒列表 ========== -->
+            <div class="page" id="page-alerts">
+                <div class="page-header">
+                    <span class="title">🔔 过期提醒</span>
+                </div>
+                <div class="main-content">
+                    <div class="alert-list" id="alertList"></div>
+                </div>
+            </div>
+
+            <!-- ========== 页面3：统计 ========== -->
+            <div class="page" id="page-stats">
+                <div class="page-header">
+                    <span class="title">📊 统计概览</span>
+                </div>
+                <div class="main-content">
+                    <div class="stats-content" id="statsContent"></div>
+                </div>
+            </div>
+
+            <!-- ========== 页面4：设置 ========== -->
+            <div class="page" id="page-settings">
+                <div class="page-header">
+                    <span class="title">⚙️ 设置</span>
+                </div>
+                <div class="main-content">
+                    <div class="settings-content">
+                        <div class="settings-group">
+                            <div class="settings-group-header">提醒设置</div>
+                            <div class="settings-item" id="settingRemindTime">
+                                <div class="si-left">
+                                    <span class="si-icon">⏰</span>
+                                    <span class="si-label">通用提醒时间</span>
+                                </div>
+                                <span class="si-value">09:00</span>
+                                <span class="si-arrow">›</span>
+                            </div>
+                            <div class="settings-item" id="settingDefaultDays">
+                                <div class="si-left">
+                                    <span class="si-icon">📅</span>
+                                    <span class="si-label">默认提前提醒天数</span>
+                                </div>
+                                <span class="si-value">3 天</span>
+                                <span class="si-arrow">›</span>
+                            </div>
+                            <div class="settings-item">
+                                <div class="si-left">
+                                    <span class="si-icon">🔕</span>
+                                    <span class="si-label">暂停所有提醒</span>
+                                </div>
+                                <div class="toggle-switch on" id="toggleAllReminders"></div>
+                            </div>
+                        </div>
+                        <div class="settings-group">
+                            <div class="settings-group-header">数据管理</div>
+                            <div class="settings-item">
+                                <div class="si-left">
+                                    <span class="si-icon">📤</span>
+                                    <span class="si-label">导出备份</span>
+                                </div>
+                                <span class="si-arrow">›</span>
+                            </div>
+                            <div class="settings-item">
+                                <div class="si-left">
+                                    <span class="si-icon">📥</span>
+                                    <span class="si-label">导入备份</span>
+                                </div>
+                                <span class="si-arrow">›</span>
+                            </div>
+                            <div class="settings-item" id="clearAllData">
+                                <div class="si-left">
+                                    <span class="si-icon">🗑️</span>
+                                    <span class="si-label" style="color:#e74c3c;">清除全部数据</span>
+                                </div>
+                                <span class="si-arrow">›</span>
+                            </div>
+                        </div>
+                        <div class="settings-group">
+                            <div class="settings-group-header">关于</div>
+                            <div class="settings-item">
+                                <div class="si-left">
+                                    <span class="si-icon">📱</span>
+                                    <span class="si-label">版本</span>
+                                </div>
+                                <span class="si-value">V1.0 MVP</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部导航 -->
+            <div class="bottom-nav" id="bottomNav">
+                <button class="nav-item active" data-page="food">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-label">食材</span>
+                </button>
+                <button class="nav-item" data-page="alerts" id="navAlerts">
+                    <span class="nav-icon">🔔</span>
+                    <span class="nav-label">提醒</span>
+                    <span class="nav-badge" id="alertBadge" style="display:none;">0</span>
+                </button>
+                <button class="nav-item" data-page="stats">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">统计</span>
+                </button>
+                <button class="nav-item" data-page="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">设置</span>
+                </button>
+            </div>
+
+            <!-- 添加食材模态弹窗 -->
+            <div class="modal-overlay" id="modalAddFood">
+                <div class="modal-sheet" id="modalSheet">
+                    <div class="modal-handle"></div>
+                    <h3>添加食材</h3>
+                    <div class="form-group">
+                        <label>食材名称</label>
+                        <input type="text" id="formName" placeholder="例如：牛奶、鸡蛋、青菜...">
+                    </div>
+                    <div class="form-group">
+                        <label>分类</label>
+                        <select id="formCategory">
+                            <option value="fresh">🥬 生鲜</option>
+                            <option value="frozen">❄️ 冷冻</option>
+                            <option value="chilled">🧊 冷藏</option>
+                            <option value="dry">📦 干货/常温</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>数量</label>
+                            <input type="number" id="formQuantity" placeholder="1" value="1" min="0.1" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label>单位</label>
+                            <select id="formUnit">
+                                <option>个</option><option>克</option><option>升</option><option>袋</option><option>瓶</option><option>盒</option><option>斤</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>存入日期</label>
+                        <input type="date" id="formStorageDate">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>保鲜期（天）</label>
+                            <input type="number" id="formFreshness" placeholder="选填" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>保质期（天）</label>
+                            <input type="number" id="formExpiry" placeholder="选填" min="1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>提前提醒天数</label>
+                        <input type="number" id="formAlarmDays" value="3" min="0" max="30">
+                    </div>
+                    <div class="form-group">
+                        <label>备注</label>
+                        <input type="text" id="formNote" placeholder="选填备注信息...">
+                    </div>
+                    <button class="btn-primary" id="btnSaveFood">✅ 保存食材</button>
+                    <button class="btn-secondary" id="btnCancelFood">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ============ 日期工具函数 ============
+            const TODAY = new Date();
+            TODAY.setHours(0, 0, 0, 0);
+            const todayStr = TODAY.toISOString().split('T')[0];
+
+            function dateStr(addDays) {
+                const d = new Date(TODAY);
+                d.setDate(d.getDate() + addDays);
+                return d.toISOString().split('T')[0];
+            }
+
+            function daysBetween(d1, d2) {
+                return Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+            }
+
+            // ============ 分类配置 ============
+            const categoryConfig = {
+                'fresh': { name: '生鲜', emoji: '🥬', iconClass: 'cat-fresh', color: '#27ae60' },
+                'frozen': { name: '冷冻', emoji: '❄️', iconClass: 'cat-frozen', color: '#5b9bd5' },
+                'chilled': { name: '冷藏', emoji: '🧊', iconClass: 'cat-chilled', color: '#f0a030' },
+                'dry': { name: '干货/常温', emoji: '📦', iconClass: 'cat-dry', color: '#b8956a' },
+            };
+
+            // ============ 默认示例数据 ============
+            const defaultFoodItems = [
+                { id: 1, name: '牛奶', category: 'fresh', quantity: 1, unit: '瓶', storageDate: dateStr(-6),
+                    freshnessDays: 7, expiryDays: null, alarmDaysBefore: 3, alarmEnabled: true, status: 'active',
+                    note: '全脂牛奶' },
+                { id: 2, name: '鸡蛋', category: 'chilled', quantity: 12, unit: '个', storageDate: dateStr(-10),
+                    freshnessDays: 15, expiryDays: null, alarmDaysBefore: 3, alarmEnabled: true, status: 'active',
+                    note: '' },
+                { id: 3, name: '青菜', category: 'fresh', quantity: 300, unit: '克', storageDate: dateStr(-3),
+                    freshnessDays: 4, expiryDays: null, alarmDaysBefore: 2, alarmEnabled: true, status: 'active',
+                    note: '上海青' },
+                { id: 4, name: '冷冻鸡胸肉', category: 'frozen', quantity: 500, unit: '克', storageDate: dateStr(-20),
+                    freshnessDays: null, expiryDays: 30, alarmDaysBefore: 3, alarmEnabled: true, status: 'active',
+                    note: '' },
+                { id: 5, name: '酸奶', category: 'chilled', quantity: 6, unit: '盒', storageDate: dateStr(-5),
+                    freshnessDays: 7, expiryDays: null, alarmDaysBefore: 3, alarmEnabled: true, status: 'active',
+                    note: '草莓味' },
+                { id: 6, name: '苹果', category: 'fresh', quantity: 4, unit: '个', storageDate: dateStr(-8),
+                    freshnessDays: 14, expiryDays: null, alarmDaysBefore: 3, alarmEnabled: true, status: 'active',
+                    note: '红富士' },
+                { id: 7, name: '剩菜-红烧肉', category: 'chilled', quantity: 1, unit: '盒', storageDate: dateStr(-2),
+                    freshnessDays: 3, expiryDays: null, alarmDaysBefore: 1, alarmEnabled: true, status: 'active',
+                    note: '周六做的' },
+                { id: 8, name: '速冻水饺', category: 'frozen', quantity: 2, unit: '袋', storageDate: dateStr(-30),
+                    freshnessDays: null, expiryDays: 60, alarmDaysBefore: 3, alarmEnabled: true, status: 'active',
+                    note: '猪肉白菜' },
+                { id: 9, name: '豆腐', category: 'fresh', quantity: 1, unit: '盒', storageDate: dateStr(-4),
+                    freshnessDays: 5, expiryDays: null, alarmDaysBefore: 2, alarmEnabled: true, status: 'active',
+                    note: '嫩豆腐' },
+                { id: 10, name: '番茄酱', category: 'dry', quantity: 1, unit: '瓶', storageDate: dateStr(-60),
+                    freshnessDays: null, expiryDays: 180, alarmDaysBefore: 7, alarmEnabled: true, status: 'active',
+                    note: '' },
+                { id: 11, name: '香蕉', category: 'fresh', quantity: 3, unit: '根', storageDate: dateStr(-5),
+                    freshnessDays: 4, expiryDays: null, alarmDaysBefore: 2, alarmEnabled: true, status: 'consumed',
+                    note: '已吃完' },
+                { id: 12, name: '过期面包', category: 'dry', quantity: 1, unit: '袋', storageDate: dateStr(-10),
+                    freshnessDays: 5, expiryDays: null, alarmDaysBefore: 3, alarmEnabled: true, status: 'discarded',
+                    note: '过期丢弃' },
+                { id: 13, name: '上周剩菜', category: 'chilled', quantity: 1, unit: '盒', storageDate: dateStr(-8),
+                    freshnessDays: 3, expiryDays: null, alarmDaysBefore: 2, alarmEnabled: true, status: 'discarded',
+                    note: '过期丢弃' },
+            ];
+
+            // ============ LocalStorage 工具函数 ============
+            const STORAGE_KEY = 'fridge_guardian_data';
+            const SETTINGS_KEY = 'fridge_guardian_settings';
+
+            function saveToLocalStorage() {
+                try {
+                    const data = {
+                        foodItems: foodItems,
+                        nextId: nextId
+                    };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                } catch (e) {
+                    console.warn('LocalStorage 保存失败:', e);
+                    showToast('⚠️ 数据保存失败，请检查存储空间');
+                }
+            }
+
+            function loadFromLocalStorage() {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        foodItems = data.foodItems || [];
+                        nextId = data.nextId || 14;
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('LocalStorage 读取失败:', e);
+                    showToast('⚠️ 数据加载失败，使用默认数据');
+                }
+                return false;
+            }
+
+            function clearLocalStorage() {
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(SETTINGS_KEY);
+                    return true;
+                } catch (e) {
+                    console.warn('LocalStorage 清除失败:', e);
+                    return false;
+                }
+            }
+
+            function saveSettingsToLocalStorage(settings) {
+                try {
+                    const existing = loadSettingsFromLocalStorage() || {};
+                    const merged = { ...existing, ...settings };
+                    localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+                } catch (e) {
+                    console.warn('设置保存失败:', e);
+                }
+            }
+
+            function loadSettingsFromLocalStorage() {
+                try {
+                    const saved = localStorage.getItem(SETTINGS_KEY);
+                    if (saved) {
+                        return JSON.parse(saved);
+                    }
+                } catch (e) {
+                    console.warn('设置读取失败:', e);
+                }
+                return null;
+            }
+
+            // ============ 全局数据变量 ============
+            let foodItems = [];
+            let nextId = 14;
+
+            // ============ 初始化数据 ============
+            function initData() {
+                if (!loadFromLocalStorage()) {
+                    // 首次使用，加载默认数据并保存
+                    foodItems = JSON.parse(JSON.stringify(defaultFoodItems)); // 深拷贝
+                    nextId = 14;
+                    saveToLocalStorage();
+                }
+            }
+
+            // ============ 计算函数 ============
+            function getExpiryDate(item) {
+                if (item.expiryDays) {
+                    const sd = new Date(item.storageDate);
+                    sd.setDate(sd.getDate() + item.expiryDays);
+                    return sd;
+                }
+                if (item.freshnessDays) {
+                    const sd = new Date(item.storageDate);
+                    sd.setDate(sd.getDate() + item.freshnessDays);
+                    return sd;
+                }
+                return null;
+            }
+
+            function getDaysRemaining(item) {
+                const expDate = getExpiryDate(item);
+                if (!expDate) return null;
+                return daysBetween(TODAY, expDate);
+            }
+
+            function getUrgencyLevel(daysRemaining) {
+                if (daysRemaining === null) return 'safe';
+                if (daysRemaining < 0) return 'expired';
+                if (daysRemaining <= 1) return 'danger';
+                if (daysRemaining <= 3) return 'warning';
+                return 'safe';
+            }
+
+            function getUrgencyLabel(daysRemaining) {
+                if (daysRemaining === null) return '未知';
+                if (daysRemaining < 0) return `已过期 ${Math.abs(daysRemaining)} 天`;
+                if (daysRemaining === 0) return '今天到期';
+                if (daysRemaining === 1) return '剩余 1 天';
+                return `剩余 ${daysRemaining} 天`;
+            }
+
+            function getUrgencyCSS(daysRemaining) {
+                const level = getUrgencyLevel(daysRemaining);
+                if (level === 'expired') return 'expired';
+                if (level === 'danger') return 'danger';
+                if (level === 'warning') return 'warning';
+                return 'safe';
+            }
+
+            function getMaxDays(item) {
+                return item.expiryDays || item.freshnessDays || 30;
+            }
+
+            function getProgressPercent(item) {
+                const daysRemaining = getDaysRemaining(item);
+                const maxDays = getMaxDays(item);
+                if (daysRemaining === null) return 50;
+                if (daysRemaining < 0) return 100;
+                const elapsed = maxDays - daysRemaining;
+                return Math.min(100, Math.max(0, Math.round((elapsed / maxDays) * 100)));
+            }
+
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // ============ DOM 引用 ============
+            const $ = (sel) => document.querySelector(sel);
+            const $$ = (sel) => document.querySelectorAll(sel);
+
+            const phoneScreen = $('#phoneScreen');
+            const foodListEl = $('#foodList');
+            const alertListEl = $('#alertList');
+            const statsContent = $('#statsContent');
+            const categoryTabs = $('#categoryTabs');
+            const alertBadge = $('#alertBadge');
+            const toast = $('#toast');
+            const modalAddFood = $('#modalAddFood');
+            const fabAdd = $('#fabAdd');
+            const btnSaveFood = $('#btnSaveFood');
+            const btnCancelFood = $('#btnCancelFood');
+            let activeCategory = 'all';
+            let activePage = 'food';
+
+            // ============ Toast ============
+            let toastTimer;
+
+            function showToast(msg) {
+                clearTimeout(toastTimer);
+                toast.textContent = msg;
+                toast.classList.add('show');
+                toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+            }
+
+            // ============ 更新食材状态 ============
+            function updateFoodStatus(id, newStatus) {
+                const item = foodItems.find(f => f.id === id);
+                if (!item) return;
+                const oldStatus = item.status;
+                item.status = newStatus;
+                item.updatedAt = new Date().toISOString();
+                const labels = { consumed: '已吃完 ✅', discarded: '已丢弃 🗑' };
+                showToast(`${item.name} 标记为${labels[newStatus] || newStatus}`);
+                saveToLocalStorage(); // 保存到 LocalStorage
+                renderAll();
+                if (oldStatus !== 'active' && newStatus === 'active') {
+                    saveToLocalStorage(); // 状态恢复也保存
+                    renderAll();
+                }
+            }
+
+            // ============ 渲染食材列表 ============
+            function renderFoodList() {
+                let items = foodItems.filter(f => f.status === 'active');
+                if (activeCategory !== 'all') {
+                    items = items.filter(f => f.category === activeCategory);
+                }
+                // 按剩余天数排序（少的在前）
+                items.sort((a, b) => {
+                    const da = getDaysRemaining(a);
+                    const db = getDaysRemaining(b);
+                    if (da === null && db === null) return 0;
+                    if (da === null) return 1;
+                    if (db === null) return -1;
+                    return da - db;
+                });
+
+                if (items.length === 0) {
+                    foodListEl.innerHTML = `
+                    <div class="empty-state">
+                      <div class="empty-emoji">🧊</div>
+                      <p>冰箱空空的～<br>点击右下角 + 添加食材吧！</p>
+                    </div>`;
+                    return;
+                }
+
+                foodListEl.innerHTML = items.map(item => {
+                    const daysRemaining = getDaysRemaining(item);
+                    const urgencyCSS = getUrgencyCSS(daysRemaining);
+                    const urgencyLabel = getUrgencyLabel(daysRemaining);
+                    const catCfg = categoryConfig[item.category] || categoryConfig['dry'];
+                    const progressPercent = getProgressPercent(item);
+                    const progressCSS = urgencyCSS === 'expired' ? 'danger' : urgencyCSS;
+                    return `
+                    <div class="food-card" data-id="${item.id}">
+                      <div class="card-icon ${catCfg.iconClass}">${catCfg.emoji}</div>
+                      <div class="card-info">
+                        <div class="card-name">${escapeHtml(item.name)}</div>
+                        <div class="card-meta">
+                          <span>${catCfg.name}</span>
+                          <span>${item.quantity} ${item.unit}</span>
+                          ${item.note ? `<span>💬 ${escapeHtml(item.note)}</span>` : ''}
+                        </div>
+                        <div class="card-progress">
+                          <div class="card-progress-bar ${progressCSS}" style="width:${progressPercent}%"></div>
+                        </div>
+                      </div>
+                      <div class="card-right">
+                        <div class="days-badge ${urgencyCSS}">${urgencyLabel}</div>
+                        <div class="card-quick-actions">
+                          <button class="card-quick-btn consumed-btn" data-action="consumed" data-id="${item.id}">✅ 吃完</button>
+                          <button class="card-quick-btn discard-btn" data-action="discarded" data-id="${item.id}">🗑 丢弃</button>
+                        </div>
+                      </div>
+                    </div>`;
+                }).join('');
+
+                // 绑定快速操作事件
+                foodListEl.querySelectorAll('.card-quick-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = parseInt(btn.dataset.id);
+                        const action = btn.dataset.action;
+                        updateFoodStatus(id, action);
+                    });
+                });
+                // 绑定卡片点击（查看详情提示）
+                foodListEl.querySelectorAll('.food-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const id = parseInt(card.dataset.id);
+                        const item = foodItems.find(f => f.id === id);
+                        if (item) {
+                            showToast(`📋 ${item.name} - ${getUrgencyLabel(getDaysRemaining(item))}`);
+                        }
+                    });
+                });
+            }
+
+            // ============ 渲染提醒列表 ============
+            function renderAlertList() {
+                const alertItems = foodItems.filter(f => {
+                    if (f.status !== 'active') return false;
+                    if (!f.alarmEnabled) return false;
+                    const daysRemaining = getDaysRemaining(f);
+                    if (daysRemaining === null) return false;
+                    return daysRemaining <= 3; // 3天内到期或已过期
+                });
+                alertItems.sort((a, b) => {
+                    const da = getDaysRemaining(a);
+                    const db = getDaysRemaining(b);
+                    if (da === null) return 1;
+                    if (db === null) return -1;
+                    return da - db;
+                });
+
+                // 更新徽章
+                const count = alertItems.length;
+                if (count > 0) {
+                    alertBadge.style.display = 'flex';
+                    alertBadge.textContent = count;
+                } else {
+                    alertBadge.style.display = 'none';
+                }
+
+                if (alertItems.length === 0) {
+                    alertListEl.innerHTML = `
+                    <div class="empty-state">
+                      <div class="empty-emoji">🎉</div>
+                      <p>太棒了！没有即将过期的食材～</p>
+                    </div>`;
+                    return;
+                }
+
+                alertListEl.innerHTML = alertItems.map(item => {
+                    const daysRemaining = getDaysRemaining(item);
+                    const urgencyLabel = getUrgencyLabel(daysRemaining);
+                    const isExpired = daysRemaining !== null && daysRemaining < 0;
+                    const catCfg = categoryConfig[item.category] || categoryConfig['dry'];
+                    const cardClass = isExpired ? '' : 'warning-level';
+                    const daysClass = isExpired ? '' : 'warn';
+                    return `
+                    <div class="alert-card ${cardClass}">
+                      <span class="alert-emoji">${isExpired ? '⚠️' : '⏰'}</span>
+                      <div class="alert-info">
+                        <div class="alert-name">${catCfg.emoji} ${escapeHtml(item.name)}</div>
+                        <div class="alert-days ${daysClass}">${urgencyLabel} | ${catCfg.name} | ${item.quantity}${item.unit}</div>
+                      </div>
+                      <button class="alert-action" data-action="consumed" data-id="${item.id}">✅ 处理</button>
+                    </div>`;
+                }).join('');
+
+                alertListEl.querySelectorAll('.alert-action').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = parseInt(btn.dataset.id);
+                        const action = btn.dataset.action;
+                        updateFoodStatus(id, action);
+                    });
+                });
+            }
+
+            // ============ 渲染统计页 ============
+            function renderStats() {
+                const activeItems = foodItems.filter(f => f.status === 'active');
+                const consumedItems = foodItems.filter(f => f.status === 'consumed');
+                const discardedItems = foodItems.filter(f => f.status === 'discarded');
+                const totalTracked = consumedItems.length + discardedItems.length;
+                const wastedCount = discardedItems.length;
+                const wasteRate = totalTracked > 0 ? Math.round((wastedCount / totalTracked) * 100) : 0;
+                const consumedRate = totalTracked > 0 ? 100 - wasteRate : 100;
+
+                // 分类统计（active）
+                const catCounts = {};
+                Object.keys(categoryConfig).forEach(cat => { catCounts[cat] = 0; });
+                activeItems.forEach(item => {
+                    if (catCounts[item.category] !== undefined) catCounts[item.category]++;
+                });
+                const maxCatCount = Math.max(1, ...Object.values(catCounts));
+                const barColors = {
+                    'fresh': '#27ae60',
+                    'frozen': '#5b9bd5',
+                    'chilled': '#f0a030',
+                    'dry': '#b8956a'
+                };
+
+                statsContent.innerHTML = `
+                <div class="stat-row">
+                  <div class="stat-mini">
+                    <div class="stat-value">${activeItems.length}</div>
+                    <div class="stat-label">当前食材数</div>
+                  </div>
+                  <div class="stat-mini">
+                    <div class="stat-value">${consumedItems.length}</div>
+                    <div class="stat-label">本周已消耗</div>
+                  </div>
+                  <div class="stat-mini">
+                    <div class="stat-value" style="color:#e74c3c;">${wastedCount}</div>
+                    <div class="stat-label">已丢弃</div>
+                  </div>
+                </div>
+                <div class="stat-card">
+                  <h3>📈 消耗 / 浪费比例</h3>
+                  <div class="ring-chart-container">
+                    <div class="ring-chart">
+                      <svg viewBox="0 0 100 100">
+                        <circle class="ring-bg" cx="50" cy="50" r="42"/>
+                        <circle class="ring-fg" cx="50" cy="50" r="42"
+                          stroke-dasharray="${2 * Math.PI * 42}"
+                          stroke-dashoffset="${2 * Math.PI * 42 * (1 - consumedRate / 100)}"
+                          style="stroke:${wasteRate > 30 ? '#e74c3c' : '#27ae60'};"/>
+                      </svg>
+                      <div class="ring-center-text">${consumedRate}%</div>
+                    </div>
+                    <div class="ring-legend">
+                      <div class="ring-legend-item"><span class="ring-legend-dot" style="background:#27ae60;"></span> 已消耗 ${consumedItems.length} 件</div>
+                      <div class="ring-legend-item"><span class="ring-legend-dot" style="background:#e74c3c;"></span> 已丢弃 ${wastedCount} 件</div>
+                      <div class="ring-legend-item" style="font-weight:600;margin-top:4px;">
+                        ${wasteRate > 25 ? '⚠️ 浪费率偏高，请注意' : '👍 浪费控制良好'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="stat-card">
+                  <h3>📊 各分类食材数量（使用中）</h3>
+                  <div class="bar-chart">
+                    ${Object.entries(catCounts).map(([cat, count]) => {
+                      const cfg = categoryConfig[cat];
+                      const heightPercent = Math.round((count / maxCatCount) * 100);
+                      return `
+                      <div class="bar-col">
+                        <div class="bar-value">${count}</div>
+                        <div class="bar-fill" style="height:${Math.max(8, heightPercent)}%;background:${barColors[cat]};"></div>
+                        <div class="bar-label">${cfg.emoji}</div>
+                      </div>`;
+                    }).join('')}
+                  </div>
+                </div>`;
+            }
+
+            // ============ 页面切换 ============
+            function switchPage(pageName) {
+                activePage = pageName;
+                // 更新页面
+                $$('.page').forEach(p => p.classList.remove('active'));
+                const targetPage = $(`#page-${pageName}`);
+                if (targetPage) targetPage.classList.add('active');
+                // 更新导航
+                $$('.nav-item').forEach(n => n.classList.remove('active'));
+                const targetNav = document.querySelector(`.nav-item[data-page="${pageName}"]`);
+                if (targetNav) targetNav.classList.add('active');
+                // 刷新内容
+                if (pageName === 'food') renderFoodList();
+                if (pageName === 'alerts') renderAlertList();
+                if (pageName === 'stats') renderStats();
+                // 滚动到顶部
+                const mainContent = targetPage?.querySelector('.main-content');
+                if (mainContent) mainContent.scrollTop = 0;
+            }
+
+            function renderAll() {
+                renderFoodList();
+                renderAlertList();
+                if (activePage === 'stats') renderStats();
+            }
+
+            // ============ 加载设置 ============
+            function loadSettings() {
+                const settings = loadSettingsFromLocalStorage();
+                if (settings) {
+                    if (settings.remindTime) {
+                        $('#settingRemindTime').querySelector('.si-value').textContent = settings.remindTime;
+                    }
+                    if (settings.defaultAlarmDays) {
+                        $('#settingDefaultDays').querySelector('.si-value').textContent =
+                            `${settings.defaultAlarmDays} 天`;
+                    }
+                    if (settings.allRemindersEnabled !== undefined) {
+                        const toggle = $('#toggleAllReminders');
+                        if (settings.allRemindersEnabled) {
+                            toggle.classList.add('on');
+                        } else {
+                            toggle.classList.remove('on');
+                        }
+                    }
+                }
+            }
+
+            // ============ 打开添加模态弹窗 ============
+            function openAddModal() {
+                const settings = loadSettingsFromLocalStorage();
+                const defaultAlarmDays = settings?.defaultAlarmDays || 3;
+
+                $('#formStorageDate').value = todayStr;
+                $('#formName').value = '';
+                $('#formFreshness').value = '';
+                $('#formExpiry').value = '';
+                $('#formAlarmDays').value = defaultAlarmDays;
+                $('#formQuantity').value = '1';
+                $('#formNote').value = '';
+                $('#formCategory').value = 'fresh';
+                modalAddFood.classList.add('show');
+                setTimeout(() => $('#formName').focus(), 400);
+            }
+
+            function closeAddModal() {
+                modalAddFood.classList.remove('show');
+            }
+
+            // ============ 事件绑定 ============
+            // 底部导航
+            $$('.nav-item').forEach(navItem => {
+                navItem.addEventListener('click', () => {
+                    const page = navItem.dataset.page;
+                    switchPage(page);
+                });
+            });
+
+            // 分类标签
+            categoryTabs.addEventListener('click', (e) => {
+                if (e.target.classList.contains('category-tab')) {
+                    activeCategory = e.target.dataset.cat;
+                    $$('.category-tab').forEach(t => t.classList.remove('active'));
+                    e.target.classList.add('active');
+                    renderFoodList();
+                }
+            });
+
+            // 浮动按钮
+            fabAdd.addEventListener('click', () => {
+                openAddModal();
+            });
+
+            // 模态弹窗
+            btnCancelFood.addEventListener('click', closeAddModal);
+            modalAddFood.addEventListener('click', (e) => {
+                if (e.target === modalAddFood) closeAddModal();
+            });
+
+            // 保存食材
+            btnSaveFood.addEventListener('click', () => {
+                const name = $('#formName').value.trim();
+                if (!name) {
+                    showToast('请输入食材名称');
+                    $('#formName').focus();
+                    return;
+                }
+                const category = $('#formCategory').value;
+                const quantity = parseFloat($('#formQuantity').value) || 1;
+                const unit = $('#formUnit').value;
+                const storageDate = $('#formStorageDate').value || todayStr;
+                const freshnessDays = parseInt($('#formFreshness').value) || null;
+                const expiryDays = parseInt($('#formExpiry').value) || null;
+                const alarmDaysBefore = parseInt($('#formAlarmDays').value) || 3;
+                const note = $('#formNote').value.trim();
+
+                if (!freshnessDays && !expiryDays) {
+                    showToast('请至少填写保鲜期或保质期之一');
+                    return;
+                }
+
+                const newItem = {
+                    id: nextId++,
+                    name,
+                    category,
+                    quantity,
+                    unit,
+                    storageDate,
+                    freshnessDays,
+                    expiryDays,
+                    alarmDaysBefore,
+                    alarmEnabled: true,
+                    status: 'active',
+                    note,
+                };
+                foodItems.unshift(newItem);
+                saveToLocalStorage(); // 保存到 LocalStorage
+
+                closeAddModal();
+                showToast(`✅ 已添加：${name}`);
+                renderAll();
+                switchPage('food');
+            });
+
+            // ============ 设置页交互 ============
+            $('#settingRemindTime').addEventListener('click', () => {
+                const times = ['07:00', '08:00', '09:00', '10:00', '12:00', '18:00', '20:00'];
+                const current = $('#settingRemindTime').querySelector('.si-value').textContent;
+                const idx = times.indexOf(current);
+                const next = times[(idx + 1) % times.length];
+                $('#settingRemindTime').querySelector('.si-value').textContent = next;
+                saveSettingsToLocalStorage({ remindTime: next });
+                showToast(`提醒时间已设为 ${next}`);
+            });
+
+            $('#settingDefaultDays').addEventListener('click', () => {
+                const days = [1, 2, 3, 5, 7, 10, 14];
+                const currentText = $('#settingDefaultDays').querySelector('.si-value').textContent;
+                const current = parseInt(currentText);
+                const idx = days.indexOf(current);
+                const next = days[(idx + 1) % days.length];
+                $('#settingDefaultDays').querySelector('.si-value').textContent = `${next} 天`;
+                saveSettingsToLocalStorage({ defaultAlarmDays: next });
+                showToast(`默认提前提醒设为 ${next} 天`);
+            });
+
+            $('#toggleAllReminders').addEventListener('click', function() {
+                this.classList.toggle('on');
+                const isOn = this.classList.contains('on');
+                saveSettingsToLocalStorage({ allRemindersEnabled: isOn });
+                showToast(isOn ? '所有提醒已开启' : '所有提醒已暂停');
+            });
+
+            $('#clearAllData').addEventListener('click', () => {
+                if (confirm('确定要清除全部食材数据吗？此操作不可恢复！')) {
+                    foodItems = [];
+                    nextId = 1;
+                    if (clearLocalStorage()) {
+                        showToast('🗑️ 所有数据已清除');
+                    } else {
+                        showToast('⚠️ 数据清除失败');
+                    }
+                    renderAll();
+                    switchPage('food');
+                }
+            });
+
+            // 键盘关闭弹窗
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modalAddFood.classList.contains('show')) {
+                    closeAddModal();
+                }
+            });
+
+            // ============ 状态栏时钟 ============
+            function updateStatusBarTime() {
+                const now = new Date();
+                const h = now.getHours().toString().padStart(2, '0');
+                const m = now.getMinutes().toString().padStart(2, '0');
+                $('.status-bar .time').textContent = `${h}:${m}`;
+            }
+            updateStatusBarTime();
+            setInterval(updateStatusBarTime, 30000);
+
+            // ============ 初始渲染 ============
+            initData(); // 先初始化数据（从 LocalStorage 加载或使用默认数据）
+            loadSettings(); // 加载保存的设置
+            renderAll();
+            switchPage('food');
+
+            console.log('🧊 冰箱管家 - Fridge Guardian | 效果展示已就绪');
+            console.log('💾 数据已启用 LocalStorage 持久化存储');
+            console.log('📋 ' + foodItems.filter(f => f.status === 'active').length + ' 个活跃食材');
+            console.log('🔔 ' + foodItems.filter(f => f.status === 'active' && f.alarmEnabled && getDaysRemaining(
+                f) !== null && getDaysRemaining(f) <= 3).length + ' 个即将过期提醒');
+            console.log('💡 点击右下角 + 添加食材 | 底部导航切换页面 | 食材卡片快速操作');
+            console.log('🔄 刷新页面后数据仍会保留 | 点击设置页"清除全部数据"可重置');
+        })();
+    </script>
+</body>
+</html>
